@@ -12,12 +12,12 @@ x <- list(
   `static dgCMatrix`= struct_equiv(methods::as(graph, "dgCMatrix")),
   `dynamic array` = struct_equiv(array(graph, dim = c(4,4,3), dimnames = list(rn, rn, 1:3))),
   `dynamic list` = struct_equiv(dyngraph),
-  `dynamic diffnet` = struct_equiv(as_diffnet(dyngraph, c(1,1,3,2)))
+  `dynamic diffnet` = struct_equiv(as_diffnet(dyngraph, c(1L,1L,3L,2L)))
 )
 
 # `Manual` calculations
 
-Z <- geodist(graph, inf.replace = 0)$gdist
+Z <- sna::geodist(graph, inf.replace = 0)$gdist
 Z <- Z/max(Z)
 
 d <- matrix(0, ncol=4, nrow=4)

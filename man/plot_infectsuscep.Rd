@@ -5,7 +5,7 @@
 \title{Plot distribution of infect/suscep}
 \usage{
 plot_infectsuscep(graph, toa, t0 = NULL, normalize = TRUE, K = 1L,
-  r = 0.5, expdiscount = FALSE, bins = 50, nlevels = round(bins/2),
+  r = 0.5, expdiscount = FALSE, bins = 20, nlevels = round(bins/2),
   logscale = TRUE,
   main = "Distribution of Infectiousness and\\nSusceptibility",
   xlab = "Infectiousness of ego", ylab = "Susceptibility of ego",
@@ -71,7 +71,7 @@ number of individuals that lie within each cell, and draws a heatmap.
 This plotting function was inspired by Aral, S., & Walker, D. (2012).
 }
 \examples{
-# Generating a random graph
+# Generating a random graph -------------------------------------------------
 set.seed(1234)
 n <- 100
 nper <- 20
@@ -79,10 +79,10 @@ graph <- rgraph_er(n,nper, p=.2, undirected = FALSE)
 toa <- sample(1:(1+nper-1), n, TRUE)
 
 # Visualizing distribution of suscep/infect
-out <- plot_infectsuscep(graph, toa, K=3, logscale = TRUE)
+out <- plot_infectsuscep(graph, toa, K=3, logscale = FALSE)
 }
 \author{
-Vega Yon
+George G. Vega Yon
 }
 \references{
 Aral, S., & Walker, D. (2012). "Identifying Influential and Susceptible Members

@@ -11,10 +11,12 @@ List struct_equiv_cpp(
     bool inv = false, double invrep = 0.0) {
 
   int n = graph.n_cols;
+  if (graph.n_cols != graph.n_rows) stop("-graph- is not square.");
+
   NumericMatrix d(n,n);
 
   // Calculating Z vector as Z_i - Z_j = {z_ik - z_jk}
-  NumericVector dmax(n, -1e5);
+  NumericVector dmax(n, -1e100);
   for(int i=0;i<n;i++) {
     for(int j=0;j<i;j++) {
 
@@ -31,15 +33,15 @@ List struct_equiv_cpp(
       // Adding up the results
       d.at(i,j) = pow(pow(graph.at(i,j) - graph.at(j,i), 2.0) + sumik + sumki, 0.5 );
 
-      // If only inverse required
-      if (inv && unscaled) d.at(i,j) = 1/(d.at(i,j) + 1e-10);
+      // // If only inverse required
+      // if (inv && unscaled) d.at(i,j) = 1.0/(d.at(i,j) + 1e-15);
 
       d.at(j,i) = d.at(i,j);
     }
   }
 
-  // If only distance must be computed
-  if (unscaled) return List::create(_["SE"]=d, _["d"]=d, _["gdist"]=graph);
+  // // If only distance must be computed
+  // if (unscaled) return List::create(_["SE"]=d, _["d"]=d, _["gdist"]=graph);
 
   // Computing distances
   NumericMatrix SE(n,n);
@@ -62,15 +64,15 @@ List struct_equiv_cpp(
     // Computing (dmax - d)/sum(dmax - d)
     for(int j=0;j<n;j++) {
       if (i==j) continue;
-      SE.at(i,j) = pow(dmax[i] - d.at(j,i), v)/(sumdmaxd + 1e-10);
+      SE.at(i,j) = pow(dmax[i] - d.at(j,i), v)/(sumdmaxd + 1e-15);
     }
 
-    // If inverse required
-    if (inv) {
-      for(int j=0;j<n;j++) {
-        SE.at(i,j) = 1/(SE.at(i,j) + 1e-10);
-      }
-    }
+    // // If inverse required
+    // if (inv) {
+    //   for(int j=0;j<n;j++) {
+    //     SE.at(i,j) = 1/(SE.at(i,j) + 1e-10);
+    //   }
+    // }
   }
 
   return List::create(_["SE"]=SE, _["d"]=d, _["gdist"]=graph);

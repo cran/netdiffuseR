@@ -24,7 +24,7 @@ Computes Moran's I correlation index
 # Generating a small random graph
 set.seed(123)
 graph <- rgraph_ba(t = 4)
-w <- sna::geodist(as.matrix(w))
+w <- igraph::distances(igraph::graph_from_adjacency_matrix(graph))
 x <- rnorm(5)
 
 # Computing Moran's I
@@ -36,7 +36,7 @@ ape::Moran.I(x, w)
 }
 }
 \author{
-Vega Yon
+George G. Vega Yon
 }
 \references{
 Moran's I. (2015, September 3). In Wikipedia, The Free Encyclopedia.

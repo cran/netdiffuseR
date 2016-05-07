@@ -10,8 +10,11 @@
 #' \item{self}{FALSE}
 #' \item{multiple}{FALSE}
 #' \item{tol}{1e-8 (used for package testing)}
+#' \item{valued}{FALSE}
+#' \item{outgoing}{TRUE}
+#' \item{keep.isolates}{TRUE}
 #' @name netdiffuseR-options
-#' @author Vega Yon
+#' @author George G. Vega Yon
 NULL
 .onLoad <- function(libname, pkgname) {
   options(
@@ -19,6 +22,8 @@ NULL
     diffnet.self=FALSE,
     diffnet.multiple=FALSE,
     diffnet.tol=1e-8,
-    diffnet.valued=FALSE
+    diffnet.valued=FALSE,
+    diffnet.outgoing=TRUE,
+    diffnet.keep.isolates=TRUE
   )
 }

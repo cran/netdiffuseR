@@ -16,7 +16,7 @@
 #' # Generating a small random graph
 #' set.seed(123)
 #' graph <- rgraph_ba(t = 4)
-#' w <- sna::geodist(as.matrix(w))
+#' w <- igraph::distances(igraph::graph_from_adjacency_matrix(graph))
 #' x <- rnorm(5)
 #'
 #' # Computing Moran's I
@@ -26,7 +26,7 @@
 #' moran(x, w/rowSums(as.array(w)))
 #' ape::Moran.I(x, w)
 #' }
-#' @author Vega Yon
+#' @author George G. Vega Yon
 moran <- function(x, w, normalize.w=TRUE) {
   if (!inherits(w, "matrix") & !inherits(w, "dgCMatrix"))
     stop("-w- must be either a matrix or a dgCMatrix.")

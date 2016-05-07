@@ -35,10 +35,10 @@ columns:
 \item{...}{Further attributes contained in \code{attrs}}
 
 On the other hand, if \code{graph} is dynamic, the output is list of length
-\eqn{T} of lists of length \code{length(V)} with matrices having the following
+\eqn{T} of lists of length \code{length(V)} with data frames having the following
 columns:
 
-\item{value}{Either the corresponding value of the diagonal matrix or a one.}
+\item{value}{The corresponding value of the adjacency matrix.}
 \item{id}{Alter's id}
 \item{per}{Time id}
 \item{...}{Further attributes contained in \code{attrs}}
@@ -100,14 +100,14 @@ diffnet <- rdiffnet(150, 20, seed.graph="small-world")
 
 # Adding attributes
 indeg <- dgr(diffnet, cmode="indegree")
-diffnet.attrs(diffnet, "vertex", "dyn") <-
- lapply(1:20, function(x) cbind(indeg=indeg[,x]))
+head(indeg)
+diffnet[["indegree"]] <- indeg
 
 # Retrieving egonet's attributes (vertices 1 and 20)
 egonet_attrs(diffnet, V=c(1,20))
 
 }
 \author{
-Vega Yon
+George G. Vega Yon
 }
 

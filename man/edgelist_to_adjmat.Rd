@@ -5,23 +5,26 @@
 \alias{edgelist_to_adjmat}
 \title{Conversion between adjacency matrix and edgelist}
 \usage{
-edgelist_to_adjmat(edgelist, weights = NULL, times = NULL, t = NULL,
+edgelist_to_adjmat(edgelist, w = NULL, t0 = NULL, t1 = NULL, t = NULL,
   simplify = TRUE, undirected = getOption("diffnet.undirected"),
   self = getOption("diffnet.self"),
-  multiple = getOption("diffnet.multiple"), use.incomplete = TRUE,
+  multiple = getOption("diffnet.multiple"), keep.isolates = TRUE,
   recode.ids = TRUE)
 
-adjmat_to_edgelist(graph, undirected = getOption("diffnet.undirected"))
+adjmat_to_edgelist(graph, undirected = getOption("diffnet.undirected", FALSE),
+  keep.isolates = getOption("diffnet.keep.isolates", TRUE))
 }
 \arguments{
 \item{edgelist}{Two column matrix/data.frame in the form of ego -source- and
 alter -target- (see details).}
 
-\item{weights}{Numeric vector. Strength of ties (optional).}
+\item{w}{Numeric vector. Strength of ties (optional).}
 
-\item{times}{Integer vector. Starting time of the ties (optional).}
+\item{t0}{Integer vector. Starting time of the ties (optional).}
 
-\item{t}{Integer scalar. If \code{times} but want to repeat the network \code{t} times.}
+\item{t1}{Integer vector. Finishing time of the ties (optional).}
+
+\item{t}{Integer scalar. Repeat the network \code{t} times (if no \code{t0,t1} are provided).}
 
 \item{simplify}{Logical scalar. When TRUE and \code{times=NULL} it will return an adjacency
 matrix, otherwise an array of adjacency matrices.}
@@ -33,11 +36,8 @@ matrix, otherwise an array of adjacency matrices.}
 \item{multiple}{Logical scalar. TRUE when multiple edges should not be included
 (see details).}
 
-\item{use.incomplete}{Logical scalar. When FALSE, rows with \code{NA/NULL} values
-(isolated vertices unless have autolink) will be droped
-and will not be considered in the graph, which may reduce the size of the
-adjacency matrix (see
-details).}
+\item{keep.isolates}{Logical scalar. When FALSE, rows with \code{NA/NULL} values
+(isolated vertices unless have autolink) will be droped (see details).}
 
 \item{recode.ids}{Logical scalar. When TRUE ids are recoded using \code{\link{as.factor}}
 (see details).}
@@ -47,7 +47,11 @@ details).}
 \value{
 In the case of \code{edgelist_to_adjmat} either an adjacency matrix
 (if times is NULL) or an array of these (if times is not null). For
-\code{adjmat_to_edgelist} the output is an edgelist.
+\code{adjmat_to_edgelist} the output is an edgelist with the following columns:
+\item{ego}{Origin of the tie.}
+\item{alter}{Target of the tie.}
+\item{value}{Value in the adjacency matrix.}
+\item{time}{Either a 1 (if the network is static) or the time stamp of the tie.}
 }
 \description{
 Generates adjacency matrix from an edgelist and vice versa.
@@ -64,23 +68,16 @@ When multiple edges are included, \code{multiple=TRUE},each vertex between \eqn{
 as many times it appears in the edgelist. So if a vertex \eqn{\{i,j\}}{{i,j}} appears 2
 times, the adjacency matrix element \code{(i,j)} will be 2.
 
-Including incomplete cases, \code{use.incomplete=TRUE}, can lead to an adjacency matrix
-with isolated vertices. Otherwise, when \code{use.incomplete=FALSE}, if all the
-edges in which a vertex participates have incomplete information in any of the
-variables (a NA, NULL or NaN value, see \code{\link{complete.cases}}), it
-will be dropped from the graph, thus, reducing the size of the adjacency
-matrix by not including isolated vertices. Notice that the \emph{best way of adding %
-isolated vertices} is to include them in the
-edgelist as connecting to themselves. The option \code{self=FALSE} will not
-drop the isolated vertices (but the adjacency matrix will have a 0-diagonal)
-but the algorithm will include them on the graph.
+Edges with incomplete information (missing data on \code{w} or \code{times}) are
+not included on the graph. Incomplete cases are tagged using \code{\link{complete.cases}}
+and can be retrieved by the user by accessing the attribute \code{incomplete}.
 
 The function performs several checks before starting to create the adjacency
 matrix. These are:
 \itemize{
  \item{Dimensions of the inputs, such as number of columns and length of vectors}
  \item{Having complete cases. If anly edge has a non-numeric value such as NAs or
- NULL in any variable (including \code{times} and \code{weights}), it will be
+ NULL in either \code{times} or \code{w}, it will be
  removed. A full list of such edges can be retrieved from the attribute
  \code{incomplete}}
  \item{Nodes and times ids coding}
@@ -95,7 +92,7 @@ correctly encoded, so when going back (using \code{edgelist_to_adjmat})
 # Base data
 set.seed(123)
 n <- 5
-edgelist <- rgraph_er(n, as.edgelist=TRUE)
+edgelist <- rgraph_er(n, as.edgelist=TRUE)[,c("ego","alter")]
 times <- sample.int(3, nrow(edgelist), replace=TRUE)
 w <- abs(rnorm(nrow(edgelist)))
 
@@ -103,17 +100,17 @@ w <- abs(rnorm(nrow(edgelist)))
 edgelist_to_adjmat(edgelist)
 edgelist_to_adjmat(edgelist, undirected = TRUE)
 
-# Using weights
+# Using w
 edgelist_to_adjmat(edgelist, w)
 edgelist_to_adjmat(edgelist, w, undirected = TRUE)
 
 # Using times
-edgelist_to_adjmat(edgelist, times = times)
-edgelist_to_adjmat(edgelist, times = times, undirected = TRUE)
+edgelist_to_adjmat(edgelist, t0 = times)
+edgelist_to_adjmat(edgelist, t0 = times, undirected = TRUE)
 
-# Using times and weights
-edgelist_to_adjmat(edgelist, times = times, weights = w)
-edgelist_to_adjmat(edgelist, times = times, undirected = TRUE, weights = w)
+# Using times and w
+edgelist_to_adjmat(edgelist, t0 = times, w = w)
+edgelist_to_adjmat(edgelist, t0 = times, undirected = TRUE, w = w)
 
 # Not recoding ----------------------------------------------------
 # Notice that vertices 3, 4 and 5 are not present in this graph.
@@ -127,12 +124,28 @@ edgelist_to_adjmat(graph)
 
 # Generates an adjmat of size 7 x 7
 edgelist_to_adjmat(graph, recode.ids=FALSE)
+
+# Dynamic with spells -------------------------------------------------------
+edgelist <- rbind(
+   c(1,2,NA,1990),
+   c(2,3,NA,1991),
+   c(3,4,1991,1992),
+   c(4,1,1992,1993),
+   c(1,2,1993,1993)
+)
+
+graph <- edgelist_to_adjmat(edgelist[,1:2], t0=edgelist[,3], t1=edgelist[,4])
+
+# Creating a diffnet object with it so we can apply the plot_diffnet function
+diffnet <- as_diffnet(graph, toa=1:4)
+plot_diffnet(diffnet, displaylabels=TRUE)
 }
 \author{
-Vega Yon, Dyal, Hayes & Valente
+George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 }
 \seealso{
-Other data management functions: \code{\link{isolated}}
+Other data management functions: \code{\link{as_diffnet}},
+  \code{\link{isolated}}, \code{\link{survey_to_diffnet}}
 }
 \keyword{manip}
 

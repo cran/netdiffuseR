@@ -11,15 +11,19 @@ arma::colvec degree_cpp(
     const arma::sp_mat & adjmat0, const int & cmode=2,
     bool undirected=true, bool self=false, bool valued=false);
 
-arma::mat exposure_cpp(
-    List graph, arma::mat cumadopt, arma::mat attrs,
-    bool outgoing =true, bool valued=true, bool normalized=true);
+arma::colvec exposure_cpp(
+    const arma::sp_mat & graph,
+    const arma::colvec & cumadopt,
+    const arma::colvec & attrs,
+    bool outgoing = true,
+    bool valued = true,
+    bool normalized = true);
 
 arma::mat cumulative_adopt_count_cpp(const arma::mat & cumadopt);
 
 arma::rowvec hazard_rate_cpp(const arma::mat & cumadopt);
 
 arma::colvec threshold_cpp(const arma::mat & exposure,
-                           const arma::vec & toa);
+                           const arma::vec & toa, bool include_censored=false);
 
 #endif

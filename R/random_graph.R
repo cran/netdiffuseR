@@ -51,7 +51,7 @@
 #' @concept Erdos-Renyi random graph
 #' @family simulation functions
 #' @include graph_data.R
-#' @author Vega Yon
+#' @author George G. Vega Yon
 rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected"), weighted=FALSE,
                        self=getOption("diffnet.self"), as.edgelist=FALSE) {
 
@@ -81,7 +81,8 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 
 #' Barabasi-Albert model
 #'
-#' Generates a scale-free random graph.
+#' Generates a scale-free random graph based on Bollabas et al. (2001), also know as
+#' \emph{Linearized Chord Diagram} (LCD) which has nice mathematical propoerties.
 #'
 #' @param m0 Integer scalar. Number of initial vertices in the graph.
 #' @param m Integer scalar. Number of new edges per vertex added.
@@ -99,7 +100,16 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 #' @concept Random graph
 #' @keywords distribution
 #' @details
-#' Creates an undirected random graph of size \code{t + m0}.
+#' Based on Ballobás et al. (2001) creates a directed random graph of size
+#' \code{t + m0}. A big difference with B-A model
+#' is that this allows for loops (self/auto edges) and further multiple links,
+#' nevertheless, as \eqn{t} increases, the number of such cases reduces.
+#'
+#' By default, the degree of the first \code{m0} vertices is set to be 2 (loops).
+#' When \code{m>1}, as described in the paper, each new link from the new vertex
+#' is added one at a time
+#' \dQuote{counting \sQuote{outward half} of the edge being added as already contributing to the degrees}.
+#'
 #' @examples
 #' # Using another graph as a base graph
 #' graph <- rgraph_ba()
@@ -108,12 +118,16 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 #' graph <- rgraph_ba(graph=graph)
 #' @export
 #' @references
+#' Bollobás, B´., Riordan, O., Spencer, J., & Tusnády, G. (2001). The degree
+#' sequence of a scale-free random graph process. Random Structures & Algorithms,
+#' 18(3), 279–290. \url{http://doi.org/10.1002/rsa.1009}
+#'
 #' Albert-László Barabási, & Albert, R. (1999). Emergence of Scaling in Random
 #' Networks. Science, 286(5439), 509–512. \url{http://doi.org/10.1126/science.286.5439.509}
 #'
 #' Albert-László Barabási. (2016). Network Science: (1st ed.). Cambridge University Press.
 #' Retrieved from \url{http://barabasi.com/book/network-science}
-#' @author Vega Yon
+#' @author George G. Vega Yon
 rgraph_ba <- function(m0=1L, m=1L, t=10L, graph=NULL) {
   # When the graph is not null, then use it as a seed (starting point)
   if (length(graph)) {
@@ -245,133 +259,55 @@ rgraph_ba <- function(m0=1L, m=1L, t=10L, graph=NULL) {
 #'
 #' @param n Integer scalar. Set the size of the graph.
 #' @param k Integer scalar. Set the initial degree of the ring (must be less than \eqn{n}).
-#' @param p Numeric scalar. Set the probability of changing an edge.
+#' @param p Numeric scalar/vector of length \eqn{T}. Set the probability of changing an edge.
 #' @param both.ends Logical scalar. When \code{TRUE} rewires both ends.
 #' @param self Logical scalar. When \code{TRUE}, allows loops (self edges).
 #' @param multiple Logical scalar. When \code{TRUE} allows multiple edges.
+#' @param undirected Logical scalar. Passed to \code{\link{ring_lattice}}
 #' @return A random graph of size \eqn{n\times n}{n*n} following the small-world
 #' model. The resulting graph will have \code{attr(graph, "undirected")=FALSE}.
 #' @family simulation functions
 #' @aliases small-world
 #' @export
+#' @details Implemented as in Watts and Strogatz (1998). Starts from an
+#' undirected ring with \eqn{n} vertices all with degree \eqn{k} (so it must
+#' be an even number), and then rewire each edge by setting the endpoint (so
+#' now you treat it as a digraph) randomly any vertex in \eqn{N \setminus {i}}{N \\ {i}}
+#' avoiding multiple links (by default) using the rewiring algorithm described on
+#' the paper.
+#'
 #' @references
 #' Watts, D. J., & Strogatz, S. H. (1998). Collective dynamics of "small-world"
 #' networks. Nature, 393(6684), 440–2. \url{http://dx.doi.org/10.1038/30918}
 #'
 #' Newman, M. E. J. (2003). The Structure and Function of Complex Networks.
 #' SIAM Review, 45(2), 167–256. \url{http://doi.org/10.1137/S003614450342480}
-#' @author Vega Yon
-rgraph_ws <- function(n,k,p, both.ends=FALSE, self=FALSE, multiple=FALSE) {
-  out <- rewire_graph_cpp(ring_lattice(n, k), p, both.ends,
-                   self, multiple, TRUE)
+#' @author George G. Vega Yon
+#' @examples
+#'
+#' library(igraph)
+#' set.seed(7123)
+#' x0 <- graph_from_adjacency_matrix(rgraph_ws(10,2, 0))
+#' x1 <- graph_from_adjacency_matrix(rgraph_ws(10,2, .3))
+#' x2 <- graph_from_adjacency_matrix(rgraph_ws(10,2, 1))
+#'
+#' oldpar <- par(no.readonly=TRUE)
+#' par(mfrow=c(1,3))
+#' plot(x0, layout=layout_in_circle, edge.curved=TRUE, main="Regular")
+#' plot(x1, layout=layout_in_circle, edge.curved=TRUE, main="Small-world")
+#' plot(x2, layout=layout_in_circle, edge.curved=TRUE, main="Random")
+#' par(oldpar)
+#'
+#' @include rewire.R
+rgraph_ws <- function(n,k,p, both.ends=FALSE, self=FALSE, multiple=FALSE,
+                      undirected=FALSE) {
+  # out <- rewire_endpoints(ring_lattice(n, k, TRUE), p, both.ends,
+  #                  self, multiple, undirected)
+  out <- rewire_ws(ring_lattice(n, k, TRUE), k, p, self, multiple)
 
   # WS model is directed
   attr(out, "undirected") <- FALSE
   out
 }
 
-#' Rewires a graph
-#'
-#' By changing the endpoints of the edges, this is the workhorse of the
-#' function \code{\link{rgraph_ws}}.
-#'
-#' @inheritParams rgraph_ws
-#' @param undirected Logical scalar. \code{TRUE} when the graph is undirected.
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}})
-#' @details Rewiring assumes a weighted network, hence \eqn{G(i,j) = k = G(i',j')},
-#' where \eqn{i',j'} are the new end points of the edge and \eqn{k} may not be equal
-#' to one.
-#' @family simulation functions
-#' @export
-#' @author Vega Yon
-rewire_graph <- function(graph, p, both.ends=FALSE, self=FALSE, multiple=FALSE,
-                         undirected=getOption("diffnet.undirected")) {
 
-  # Checking undirected (if exists)
-  checkingUndirected(graph)
-
-  out <- switch(class(graph),
-    dgCMatrix = rewire_graph.dgCMatrix(graph, p, both.ends, self, multiple, undirected),
-    list = rewire_graph.list(graph, p, both.ends, self, multiple, undirected),
-    matrix = rewire_graph.dgCMatrix(
-      methods::as(graph, "dgCMatrix"), p, both.ends, self, multiple, undirected),
-    diffnet = {
-      rewire_graph.list(graph$graph, p, both.ends, self, multiple,
-                                graph$meta$undirected)
-      },
-    array = rewire_graph.array(graph, p, both.ends, self, multiple, undirected),
-    stopifnot_graph(graph)
-  )
-
-  # If diffnet, then it must return the same object but rewired, and change
-  # the attribute of directed or not
-  if (inherits(graph, "diffnet")) {
-    graph$meta$undirected <- undirected
-    graph$graph <- out
-    return(graph)
-  }
-
-  attr(out, "undirected") <- FALSE
-
-  return(out)
-}
-
-# @rdname rewire_graph
-rewire_graph.list <- function(graph, p, both.ends=FALSE, self=FALSE, multiple=FALSE,
-                              undirected=getOption("diffnet.undirected")) {
-  t   <- length(graph)
-  out <- vector("list", t)
-
-  # Names
-  tn <- names(graph)
-  if (!length(tn)) tn <- 1:t
-  names(out) <- tn
-
-  for (i in 1:t) {
-    out[[i]] <- rewire_graph_cpp(graph[[i]], p, both.ends, self, multiple,
-                                    undirected)
-    # Names
-    rn <- rownames(graph[[i]])
-    if (!length(rn)) rn <- 1:nrow(graph[[i]])
-    dimnames(out[[i]]) <- list(rn, rn)
-  }
-
-  out
-}
-
-# @rdname rewire_graph
-rewire_graph.dgCMatrix <- function(graph, p, both.ends=FALSE, self=FALSE, multiple=FALSE,
-                         undirected=getOption("diffnet.undirected")) {
-  out <- rewire_graph_cpp(graph, p, both.ends, self, multiple, undirected)
-
-  rn <- rownames(out)
-  if (!length(rn)) rn <- 1:nrow(out)
-  dimnames(out) <- list(rn, rn)
-  out
-}
-
-# @rdname rewire_graph
-rewire_graph.array <-function(graph, p, both.ends=FALSE, self=FALSE, multiple=FALSE,
-                              undirected=getOption("diffnet.undirected")) {
-  n   <- dim(graph)[1]
-  t   <- dim(graph)[3]
-  out <- vector("list", t)
-
-  # Checking time names
-  tn <- dimnames(graph)[[3]]
-  if (!length(tn)) tn <- 1:t
-  names(out) <- tn
-
-  # Rewiring
-  for(i in 1:t) {
-    out[[i]] <- rewire_graph_cpp(
-      methods::as(graph[,,i], "dgCMatrix"), p, both.ends, self, multiple, undirected)
-
-    rn <- rownames(graph[,,i])
-    if (!length(rn)) rn <- 1:n
-
-    dimnames(out[[i]]) <- list(rn, rn)
-  }
-
-  out
-}

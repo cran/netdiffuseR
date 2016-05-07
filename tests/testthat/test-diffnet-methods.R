@@ -13,7 +13,7 @@ test_that("Should return coords of dim n x 2 (plot_diffnet)", {
   graphar <- unlist(lapply(graph, as.matrix))
   graphar <- array(graphar, dim = c(11,11,3))
 
-  diffnet <- as_diffnet(graph, toa)
+  diffnet <- as_diffnet(graph, toa, undirected = FALSE)
 
   # List
   coords <- plot_diffnet(graph, toa_mat(toa)$cumadopt)
@@ -108,8 +108,8 @@ test_that("diffnet print and summary", {
   diffnet_und <- as_diffnet(diffnet, toa, undirected = TRUE)
   diffnet_dir <- as_diffnet(diffnet, toa, undirected = FALSE)
 
-  expect_output(diffnet_und, "type.+ undirected", ignore.case=TRUE)
-  expect_output(diffnet_dir, "type.+ directed", ignore.case=TRUE)
+  expect_output(print(diffnet_und), "type.+ undirected", ignore.case=TRUE)
+  expect_output(print(diffnet_dir), "type.+ directed", ignore.case=TRUE)
 
   expect_output(summary(diffnet_und), "Diffusion network summary")
 })
@@ -128,3 +128,4 @@ test_that("summary.diffnet with slices", {
     expect_equal(out1[slices,], out2)
   }
 })
+

@@ -1,6 +1,6 @@
 ## ----Setup, echo=FALSE, message=FALSE, warning=FALSE---------------------
 library(knitr)
-opts_chunk$set(out.width = 600, fig.align = "center", fig.width = 7, fig.height = 7)
+opts_chunk$set(out.width = 600, fig.align = "center", fig.width = 7, fig.height = 7) 
 
 ## ----Loading pkgs and reading the data-----------------------------------
 library(netdiffuseR)
@@ -18,12 +18,6 @@ surveyed <- medInnovations$id
 for (i in netvars)
   medInnovations[[i]][which(!(medInnovations[[i]] %in% surveyed))] <- NA
 
-# Adding autoedges to farmers that are isolated, we need to do this otherwize
-# these will be dropped when calling the function -edgelist_to_adjmat-. Notice
-# that this does not imply that the graph will have autoedges. (see manual)
-isolated <- which(apply(medInnovations[, netvars], 1, function(x) all(is.na(x))))
-medInnovations[isolated, netvars[1]] <- medInnovations$id[isolated]
-
 # Reshaping data (so we have an edgelist)
 medInnovations.long <- reshape(
   medInnovations[,c(othervars, netvars)], v.names= "net",
@@ -35,20 +29,17 @@ medInnovations.long <- reshape(
 # network is constant through time.
 graph <- with(
   medInnovations.long,
-  edgelist_to_adjmat(cbind(id, net), t=18,undirected=FALSE, use.incomplete=FALSE)
+  edgelist_to_adjmat(cbind(id, net), t=18,undirected=FALSE, keep.isolates = TRUE)
 )
 
-# Here we are retrieving the set of individuals who actually were used in the
-# network (as these are not isolated nodes)
-used.vertex <- rownames(graph[[1]])
-medInnovations <- subset(medInnovations, id %in% used.vertex)
-
-# Create the vector (subset) of times of adoption using only the individuals
-# that are included in the adjacency matrix
-toa <- medInnovations$toa
+## ------------------------------------------------------------------------
+# Just to be sure. Sorting the data!
+orddata <- as.numeric(as.factor(rownames(graph[[1]])))
+medInnovations <- medInnovations[orddata,]
 
 # Creating a diffnet object
-diffnet <- as_diffnet(graph, toa, vertex.static.attrs = medInnovations)
+diffnet <- as_diffnet(graph, medInnovations$toa, 
+                      vertex.static.attrs = subset(medInnovations, select=c(-id, -toa)))
 
 ## ----Checking-the-methods------------------------------------------------
 plot(diffnet, t=diffnet$meta$nper)
@@ -89,13 +80,13 @@ plot_infectsuscep(diffnet_city1, K=5, logscale = TRUE, bins=20)
 avgthr <- function(x) mean(threshold(x), na.rm = TRUE)
 
 # Running the test by city
-test1   <- boot_net(diffnet_city1, avgthr, 2000, ncpus=2, parallel="multicore")
-test2   <- boot_net(diffnet_city2, avgthr, 2000, ncpus=2, parallel="multicore")
-test3   <- boot_net(diffnet_city3, avgthr, 2000)
-test4   <- boot_net(diffnet_city4, avgthr, 2000)
+test1   <- struct_test(diffnet_city1, avgthr, 2000, ncpus=2, parallel="multicore")
+test2   <- struct_test(diffnet_city2, avgthr, 2000, ncpus=2, parallel="multicore")
+test3   <- struct_test(diffnet_city3, avgthr, 2000)
+test4   <- struct_test(diffnet_city4, avgthr, 2000)
 
 # Running the test aggregated
-testall <- boot_net(diffnet, avgthr, 2000, ncpus=2, parallel="multicore")
+testall <- struct_test(diffnet, avgthr, 2000, ncpus=2, parallel="multicore")
 
 # Printing the outcomes
 test1
@@ -124,11 +115,8 @@ par(oldpar)
 expo <- exposure(diffnet)
 head(expo)
 
-# Must be a list to be used in diffnet
-expo <- lapply(1:ncol(expo), function(x) cbind(netexp=expo[,x]))
-
-# Adding it to diffnet
-diffnet.attrs(diffnet, attr.class="dyn") <- expo
+# Netdiffuser automatically identifies whether the input is dynamic or not.
+diffnet[["netexp"]] <- expo
 
 ## ------------------------------------------------------------------------
 mydata <- diffnet.attrs(diffnet, as.df = TRUE)

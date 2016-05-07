@@ -17,6 +17,10 @@
 #' @param annotated Logical scalar. When TRUE marks the observed data average and the simulated data average.
 #' @return A list of class \code{diffnet_bot} containing the following:
 #' \item{graph}{The graph passed to \code{struct_test}.}
+#' \item{p.value}{The resulting p-value of the test (see details).}
+#' \item{t0}{The observed value of the statistic.}
+#' \item{mean_t}{The average value of the statistic applied to the simulated networks.}
+#' \item{R}{Number of simulations.}
 #' \item{statistic}{The function \code{statistic} passed to \code{struct_test}.}
 #' \item{boot}{A \code{boot} class object as return from the call to \code{boot}.}
 #'
@@ -25,7 +29,9 @@
 #' \code{struct_test} is a wrapper for the function \code{\link[boot:boot]{boot}} from the
 #' \pkg{boot} package. Instead of resampling data--vertices or edges--in each iteration the function
 #' rewires the original graph using \code{\link{rewire_graph}} and applies
-#' the function defined by the user in \code{statistic}.
+#' the function defined by the user in \code{statistic}. In particular, the \code{"swap"} algorithm
+#' is used in order to preserve the degree sequence of the graph, in other words,
+#' each rewired version of the original graph has the same degree sequence.
 #'
 #' In \code{struct_test} \code{\dots} are passed to \code{boot}, otherwise are passed
 #' to the corresponding method (\code{\link{hist}} for instance).
@@ -53,7 +59,7 @@
 #' @examples
 #' # Creating a random graph
 #' set.seed(881)
-#' diffnet <- rdiffnet(100, 10)
+#' diffnet <- rdiffnet(500, 10, seed.graph="small-world")
 #'
 #' # Testing structure-dependency of threshold
 #' res <- struct_test(diffnet, function(g) mean(threshold(g), na.rm=TRUE), R=100)
@@ -75,12 +81,17 @@
 #' res
 #' hist(res)
 #' }
-#' @author Vega Yon
+#' @author George G. Vega Yon
 struct_test <- function(
   graph,
   statistic,
   R,
-  rewire.args=list(p=1, undirected=getOption("diffnet.undirected"), both.ends=TRUE),
+  rewire.args=list(
+    p          = c(2000, rep(100, nslices(graph) - 1)),
+    undirected = getOption("diffnet.undirected", FALSE),
+    copy.first = TRUE,
+    algorithm  = "swap"
+    ),
   ...
   ) {
 
@@ -101,11 +112,21 @@ struct_test <- function(
   # The t0 must be applied with no rewiring!
   boot_res$t0 <- statistic(graph)
 
+  # Calc pval
+  # To be conservative, in a two tail test we use the min of the two
+  # So, following davidson & mckinnon Confidence intrval section,
+  # p(tau) = 2 * min[F(tau), 1-F(tau)]
+  p.value <- 2*min(mean(boot_res$t < boot_res$t0), mean(boot_res$t > boot_res$t0))
+
   # Creating the object
   out <- list(
-    graph = graph,
-    statistic = statistic,
-    boot=boot_res
+    graph       = graph,
+    p.value     = p.value,
+    t0          = boot_res$t0,
+    mean_t      = colMeans(boot_res$t, na.rm = TRUE),
+    R           = R,
+    statistic   = statistic,
+    boot        = boot_res
   )
 
   return(structure(out, class="diffnet_struct_test"))
@@ -117,19 +138,15 @@ print.diffnet_struct_test <- function(x, ...) {
   with(x,  {
     tmean <- colMeans(boot$t, na.rm = TRUE)
 
-    # Calc pval
-    # To be conservative, in a two tail test we use the min of the two
-    # So, following davidson & mckinnon Confidence intrval section,
-    # p(tau) = 2 * min[F(tau), 1-F(tau)]
-    test <- 2*min(mean(boot$t < boot$t0), mean(boot$t > boot$t0))
-    cat("Network Rewiring graph (",nrow(boot$t)," simulations)\n",
-        "# nodes           : ", x$graph$meta$n,"\n",
-        "# of time periods : ", x$graph$meta$nper,"\n",
+    cat("Structure dependence test\n",
+        "# Simulations     : ", formatC(nrow(boot$t), digits = 0, format = "f", big.mark = ","),"\n",
+        "# nodes           : ", formatC(x$graph$meta$n, digits = 0, format = "f", big.mark = ","),"\n",
+        "# of time periods : ", formatC(x$graph$meta$nper, digits = 0, format = "f", big.mark = ","),"\n",
         paste(rep("-",80), collapse=""),"\n",
-        " H0: t - t0 = 0 (No structure dependency)\n",
-        "   t0 (observed) = ", boot$t0, "\n",
-        "   t (simulated) = ", tmean, "\n",
-        "   p-value = ", sprintf("%.5f",test), sep="")
+        " H0: t - t0 = 0 (no structure dependency)\n",
+        "   t0 (observed) = ", t0, "\n",
+        "   t (simulated) = ", mean_t, "\n",
+        "   p-value = ", sprintf("%.5f", p.value), sep="")
   })
   invisible(x)
 }
@@ -140,7 +157,7 @@ print.diffnet_struct_test <- function(x, ...) {
 #' @rdname struct_test
 hist.diffnet_struct_test <- function(
   x,
-  main="Distribution of Statistic on\nrewired network",
+  main="Empirical Distribution of Statistic",
   xlab=expression(Values~of~t),
   breaks=20,
   annotated=TRUE,

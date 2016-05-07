@@ -1,5 +1,6 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+#include "netdiffuser_extra.h"
 using namespace Rcpp;
 
 arma::vec seq_cpp(double from, double to, int lengthout) {
@@ -87,7 +88,7 @@ List grid_distribution(const arma::vec & x, const arma::vec & y, int nlevels=100
 
 // arma::mat grid_dist(const arma::vec & xran, const arma::vec & yran, const & arma::vec)
 
-/***R
+/** *R
 library(microbenchmark)
 microbenchmark(
   seq_cpp(0,1,100),
@@ -120,14 +121,14 @@ with(z, rgl::persp3d(as.vector(x),as.vector(y),z/sum(z), col="lightblue"))
 //' @param undirected Logical scalar. Whether the graph is undirected or not.
 //' @param no_contemporary Logical scalar. Whether to return (calcular) edges'
 //' coordiantes for vertices with the same time of adoption (see details).
-//' @return A numeric matrix of size \eqn{m\times 8}{m * 8} with the following
+//' @param dev Numeric vector of size 2. Height and width of the device (see details).
+//' @param ran Numeric vector of size 2. Range of the x and y axis (see details).
+//' @return A numeric matrix of size \eqn{m\times 5}{m * 5} with the following
 //' columns:
 //' \item{x0, y0}{Edge origin}
 //' \item{x1, y1}{Edge target}
-//' \item{size0, size1}{Size of the vertices of ego and alter in terms of the x-axis}
 //' \item{alpha}{Relative angle between \code{(x0,y0)} and \code{(x1,y1)} in terms
 //' of radians}
-//' \item{dist}{Relavtide distance between ego and alters' center.}
 //' With \eqn{m} as the number of resulting edges.
 //' @details
 //'
@@ -160,9 +161,45 @@ with(z, rgl::persp3d(as.vector(x),as.vector(y),z/sum(z), col="lightblue"))
 //' }
 //' }
 //'
+//' The same process (with sign inverted) is applied to the edge starting piont.
 //' The resulting values, \eqn{x_1',y_1'}{x1',y1'} can be used with the function
 //' \code{\link{arrows}}. This is the workhorse function used in \code{\link{plot_threshold}}.
+//'
+//' The \code{dev} argument provides a reference to rescale the plot accordingly
+//' to the device, and former, considering the size of the margins as well (this
+//' can be easily fetched via \code{par("pin")}, plot area in inches).
+//'
+//' On the other hand, \code{ran} provides a reference for the adjustment
+//' according to the range of the data, this is \code{range(x)[2] - range(x)[1]}
+//' and \code{range(y)[2] - range(y)[1]} respectively.
+//'
 //' @keywords misc dplot
+//' @examples
+//' # --------------------------------------------------------------------------
+//' data(medInnovationsDiffNet)
+//' library(sna)
+//'
+//' # Computing coordinates
+//' set.seed(79)
+//' coords <- sna::gplot(as.matrix(medInnovationsDiffNet$graph[[1]]))
+//'
+//' # Getting edge coordinates
+//' vcex <- rep(1.5, nnodes(medInnovationsDiffNet))
+//' ecoords <- edges_coords(
+//'   medInnovationsDiffNet$graph[[1]],
+//'   diffnet.toa(medInnovationsDiffNet),
+//'   x = coords[,1], y = coords[,2],
+//'   vertex_cex = vcex,
+//'   dev = par("pin")
+//'   )
+//'
+//' ecoords <- as.data.frame(ecoords)
+//'
+//' # Plotting
+//' symbols(coords[,1], coords[,2], circles=vcex,
+//'   inches=FALSE, xaxs="i", yaxs="i")
+//'
+//' with(ecoords, arrows(x0,y0,x1,y1, length=.1))
 //' @export
 // [[Rcpp::export]]
 NumericMatrix edges_coords(
@@ -172,110 +209,289 @@ NumericMatrix edges_coords(
     const arma::colvec & y,
     const arma::colvec & vertex_cex,
     bool undirected=true,
-    bool no_contemporary=true) {
-
-  int n = graph.n_cols;
+    bool no_contemporary=true,
+    NumericVector dev = NumericVector::create(),
+    NumericVector ran = NumericVector::create()
+) {
 
   // The output matrix has the following
   // - x0 and y0
   // - x1 and y1
   // - alpha
-  // - dist
-  // - size0 and size1
-  // - mutual
   std::vector< double > x0;
   std::vector< double > y0;
   std::vector< double > x1;
   std::vector< double > y1;
   std::vector< double > alpha;
-  std::vector< double > dist;
-  std::vector< double > size0;
-  std::vector< double > size1;
-  // std::vector< int > mutual;
 
   // Rescaling the vertex sizes
   arma::colvec vertex_size(vertex_cex);
 
   // If yexpand is too small, just throw an error
-  double xmin = x.min();
-  double xmax = x.max();
-  double ymin = y.min();
-  double ymax = y.max();
+  if (ran.length() == 0) {
+    ran = NumericVector::create(2);
+    ran[0] = x.max() - x.min();
+    ran[1] = y.max() - y.min();
+  }
 
   // Expansion factor for y
   double yexpand = 1.0;
-  if ( (ymax - ymin) > 1e-5 ) yexpand = (ymax - ymin)/(xmax - xmin);
+  if ( ran[1] > 1e-5 ) yexpand = ran[1]/ran[0];
 
-  for(int i=0;i<n;i++) {
+  // Adjusting for device size
+  if (dev.length() == 0)
+    dev = NumericVector::create(2,1.0);
 
-    // Verifying undirected or not
-    int m=n;
-    if (undirected) m=i;
+  yexpand = yexpand * (dev[0]/dev[1]);
 
-    for(int j=0;j<m;j++) {
-      // And edge will be drawn iff, there's a link, !contmporary and
-      // the distance is != 0
-      if (!graph(i,j)) continue;
-      if (no_contemporary && (toa(i)==toa(j)) ) continue;
+  // The the filled elements of the graph
+  arma::umat indexes = sparse_indexes(graph);
 
-      // Euclidean distance
-      double d = pow( pow(x(i) - x(j), 2.0) + pow( (y(i) - y(j))/yexpand, 2.0) , 0.5 );
-      if (d < 1e-15) continue;
+  // for(int i=0;i<n;i++) {
+  for(unsigned I=0;I<indexes.n_rows;I++) {
 
-      dist.push_back(d);
+    int i = indexes.at(I,0);
+    int j = indexes.at(I,1);
 
-      // Computing the elevation degree
-      double a = acos( (x[i] - x[j])/d );
-      alpha.push_back(a);
+    // Checking conditions
+    if (undirected && (i < j)) continue;
+    if (no_contemporary && (toa(i)==toa(j)) ) continue;
 
-      // Adding the xs and the ys
-      x0.push_back(x(i));
-      x1.push_back(x(j) + cos(a)*vertex_size(j));
+    // Computing angle
+    double a = angle(x(i), y(i)/yexpand, x(j), y(j)/yexpand);
+    alpha.push_back(a);
 
-      y0.push_back(y(i));
+    // Adding the xs and the ys
+    x0.push_back(x.at(i) + cos(a)*vertex_size.at(i));
+    x1.push_back(x.at(j) - cos(a)*vertex_size.at(j));
 
-      // The formula needs an extra help to figure out the ys
-      if (y(i) < y(j)) y1.push_back(y(j) - sin(a)*vertex_size(j)*yexpand);
-      else             y1.push_back(y(j) + sin(a)*vertex_size(j)*yexpand);
-
-      // Now the sizes
-      size0.push_back(vertex_size(i));
-      size1.push_back(vertex_size(j));
-    }
+    // The formula needs an extra help to figure out the ys
+    y0.push_back(y.at(i) + sin(a)*vertex_size.at(i)*yexpand);
+    y1.push_back(y.at(j) - sin(a)*vertex_size.at(j)*yexpand);
   }
 
   // Building up the output
   int e = x0.size();
-  NumericMatrix out(e,8);
+  NumericMatrix out(e,5);
   for(int i=0; i<e; i++) {
     out(i,0) = x0[i];
     out(i,1) = y0[i];
     out(i,2) = x1[i];
     out(i,3) = y1[i];
-    out(i,4) = size0[i];
-    out(i,5) = size1[i];
-    out(i,6) = alpha[i];
-    out(i,7) = dist[i];
+    out(i,4) = alpha[i];
   }
 
-  colnames(out) = CharacterVector::create("x0", "y0", "x1", "y1", "size0",
-           "size1", "alpha", "dist");
+  colnames(out) = CharacterVector::create("x0", "y0", "x1", "y1", "alpha");
 
   return out;
 
 }
 
-/***R
+/** *R
+library(netdiffuseR)
 set.seed(123)
-graph <- rand_graph()
-toa <- sample(1:5, 10, TRUE)
-pos <- sna::gplot.layout.random(matrix(graph, ncol=10), NULL)
-cex <- seq(1,5,length.out = 10)
+graph <- rgraph_ba()
+toa <- sample(1:5, nnodes(graph), TRUE)
+pos <- sna::gplot.layout.random(as.matrix(graph), NULL)
+pos[,2] <- pos[,2]*20
+cex <- seq(1,3,length.out = nnodes(graph))/40
 
-arr <- as.data.frame(edges_coords(graph, toa, pos[,1], pos[,2], cex/20))
+# Adjusting by device size, mar and mai
+arr <- as.data.frame(edges_coords(graph, toa, pos[,1], pos[,2], cex,
+                                  dev = par("pin)))
 
-plot(pos, col="white", xlim= c(-2,2), ylim= c(-2,2))
+#Fixing sizes and others
+xran <- range(pos[,1])
+yran <- range(pos[,2])
+plot(pos, col="white", xlim= xran, ylim= yran,
+     xaxs="i", yaxs="i",xaxt="n", yaxt="n")
+
+yran <- pretty(seq(yran[1], yran[2], length.out = 10), n=10)
+xran <- pretty(seq(xran[1], xran[2], length.out = 10), n=10)
+axis(1, at =xran)
+axis(2, at =yran)
+
 with(arr, arrows(x0, y0, x1, y1))
-symbols(pos, circles=cex/20, add=TRUE, inches = FALSE, bg="lightblue")
-text(pos[,1], pos[,2], labels = 1:10)
+symbols(pos[,1], pos[,2], circles=cex, add=TRUE, inches = FALSE, bg=rgb(.3,.3,.8,.2),
+        xaxs="i", yaxs="i")
+text(pos[,1], pos[,2], labels = 1:11)
+
+# Taking a look at one of these
+pos[c(4,11),]
+
+a <- atan((-3.4510269 - -0.8881612)/(0.8045981-0.3114116))
+*/
+
+
+// [[Rcpp::export]]
+arma::mat edges_arrow(
+    const double & x0,
+    const double & y0,
+    const double & x1,
+    const double & y1,
+    const double & height,
+    const double & width,
+    const double beta = 1.5707963267949, // PI/2
+    NumericVector dev = NumericVector::create(),
+    NumericVector ran = NumericVector::create()
+) {
+  // Creating output
+  arma::mat coords(6,2);
+
+  // If yexpand is too small, just throw an error ------------------------------
+  if (ran.length() == 0) {
+    ran = NumericVector::create(2);
+    ran[0] = (x1 > x0 ? x1 - x0: x0 -x1);
+    ran[1] = (y1 > y0 ? y1 - y0: y0 -y1);
+  }
+
+  // Expansion factor for y
+  double yexpand = 1.0;
+  if ( ran[1] > 1e-5 ) yexpand = ran[1]/ran[0];
+
+  // Adjusting for device size
+  if (dev.length() == 0)
+    dev = NumericVector::create(2,1.0);
+
+  yexpand = yexpand * (dev[0]/dev[1]);
+
+  // Computing angle and adjusting for sign
+  double alpha = angle(x0, y0/yexpand, x1, y1/yexpand);
+
+  // Filling coords ------------------------------------------------------------
+  coords.at(0,0) = x1;
+  coords.at(0,1) = y1;
+
+  // Left
+  coords.at(1,0) = x1 - cos(alpha)*height + cos(beta+alpha)*width;
+  coords.at(1,1) = y1 - (sin(alpha)*height - sin(beta+alpha)*width)*yexpand;
+
+  // center
+  coords.at(2,0) = x1 - cos(alpha)*height;
+  coords.at(2,1) = y1 - sin(alpha)*height*yexpand;
+
+  // Bottom
+  coords.at(3,0) = x0;
+  coords.at(3,1) = y0;
+
+  // Back to the center
+  coords.at(4,0) = coords.at(2,0);
+  coords.at(4,1) = coords.at(2,1);
+
+  // Right
+  coords.at(5,0) = x1 - cos(alpha)*height + cos(-beta+alpha)*width;
+  coords.at(5,1) = y1 - (sin(alpha)*height - sin(-beta+alpha)*width)*yexpand;
+
+  return coords;
+}
+
+/** *R
+# rm(list = ls())
+
+X <- c(-9,-9)
+ran <- X*1.1
+h <- 1
+w <- .5
+beta <- pi/1.5
+
+pol2 <- vector_polygon(0, 0, X[1], X[2], h, w, dev=par("pin"), beta = beta)
+
+plot(pol2[,1], pol2[,2], xlim=ran, ylim=ran, col="white")
+polygon(pol2[,1], pol2[,2], col=rgb(.5,.5,.9,.5))
+
+text(pol2[,1], pol2[,2], text=1:3)
+segments(0,0,X[1],X[1])
+
+library(netdiffuseR)
+data("medInnovationsDiffNet")
+x <- plot_threshold(medInnovationsDiffNet)
+
+*/
+
+
+// [[Rcpp::export]]
+List vertices_coords(
+    const arma::colvec & x,
+    const arma::colvec & y,
+    const arma::colvec & size,
+    const arma::colvec & nsides,
+    const arma::colvec & rot,
+    NumericVector dev = NumericVector::create(),
+    NumericVector ran = NumericVector::create()
+) {
+
+
+  // Checking sizes
+  if (x.n_rows != y.n_rows) stop("-x- and -y- lengths do not coincide.");
+  if (x.n_rows != size.n_rows) stop("-x- and -size- lengths do not coincide.");
+  if (x.n_rows != nsides.n_rows) stop("-x- and -nsides- lengths do not coincide.");
+  if (x.n_rows != rot.n_rows) stop("-x- and -rot- lengths do not coincide.");
+
+  List out(x.n_rows);
+
+  // If yexpand is too small, just throw an error
+  if (ran.length() == 0) {
+    ran = NumericVector::create(2);
+    ran[0] = x.max() - x.min();
+    ran[1] = y.max() - y.min();
+  }
+
+  // Expansion factor for y
+  double yexpand = 1.0;
+  if ( ran[1] > 1e-5 ) yexpand = ran[1]/ran[0];
+
+  // Adjusting for device size
+  if (dev.length() == 0)
+    dev = NumericVector::create(2,1.0);
+
+  yexpand = yexpand * (dev[0]/dev[1]);
+
+  for (unsigned i=0;i<x.n_rows;i++) {
+    // Getting inner degrees
+    double alpha = PI - ((nsides(i) - 2.0)*PI)/nsides(i);
+    double beta  = (PI - 2.0*PI/nsides(i))/2.0;
+
+    // Getting step size
+    double size_adj = 2.0*cos(beta)*size(i);
+
+    // Suboutput and first coordinate
+    arma::mat coords(nsides(i),2);
+    coords(0,0) = x(i) + size(i)*cos(beta + PI + rot(i));
+    coords(0,1) = y(i) + size(i)*sin(beta + PI + rot(i))*yexpand;
+
+    double ALPHA = rot(i);
+    for (int j=1; j<nsides(i); j++) {
+      coords(j,0) = coords(j-1,0) + size_adj*cos(ALPHA);
+      coords(j,1) = coords(j-1,1) + size_adj*sin(ALPHA)*yexpand;
+      ALPHA += alpha;
+    }
+
+    // Assigning element
+    out[i] = coords;
+  }
+
+  return out;
+}
+
+/* **R
+
+# Parameters
+n   <- c(3,4,5,6)
+d   <- rep(.5, 4)
+rot <- rep(-pi/6, 4)
+y <- x <- c(1, 2, 3, 4)
+
+plot.new()
+plot.window(xlim=c(0,5), ylim=c(0,5))
+axis(1)
+axis(2)
+
+# Computing coordinates
+coords <- vertices_coords(x,y,d,n,rot, dev=par()$pin)
+
+# polygon(coords)
+invisible(lapply(coords, polygon))
+
+invisible(sapply(x, function(x) symbols(x,x, .5, inches=FALSE, add=TRUE)))
+
 */

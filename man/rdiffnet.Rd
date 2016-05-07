@@ -6,7 +6,7 @@
 \usage{
 rdiffnet(n, t, seed.nodes = "random", seed.p.adopt = 0.05,
   seed.graph = "scale-free", rgraph.args = list(), rewire = TRUE,
-  rewire.args = list(p = 0.1, undirected = TRUE),
+  rewire.args = list(p = 0.1, undirected = FALSE),
   threshold.dist = function(x) runif(1), exposure.args = list(outgoing =
   TRUE, valued = getOption("diffnet.valued", FALSE), normalized = TRUE))
 }
@@ -15,12 +15,11 @@ rdiffnet(n, t, seed.nodes = "random", seed.p.adopt = 0.05,
 
 \item{t}{Integer scalar. Time length.}
 
-\item{seed.nodes}{Character scalar. Type of seed nodes (early adoptes).}
+\item{seed.nodes}{Either a character scalar or a vector. Type of seed nodes (see details).}
 
 \item{seed.p.adopt}{Numeric scalar. Proportion of early adopters.}
 
-\item{seed.graph}{Character scalar. Type of algorithm used to generate the
-seed graph (see details).}
+\item{seed.graph}{Baseline graph used for the simulation (see details).}
 
 \item{rgraph.args}{List. Arguments to be passed to rgraph.}
 
@@ -29,10 +28,10 @@ seed graph (see details).}
 
 \item{rewire.args}{List. Arguments to be passed to \code{\link{rewire_graph}}.}
 
-\item{threshold.dist}{Function. Applied via \code{\link{sapply}}, sets the
-adoption threshold for each node.}
+\item{threshold.dist}{Either a function to be applied via \code{\link{sapply}},
+or a vector/matrix with \eqn{n} elements. Sets the adoption threshold for each node.}
 
-\item{exposure.args}{List. Arguments to be passed to \code{link{exposure}}.}
+\item{exposure.args}{List. Arguments to be passed to \code{\link{exposure}}.}
 }
 \value{
 A random \code{\link{diffnet}} class object.
@@ -58,24 +57,30 @@ equal to his threshold. The simulation is done in the following steps:
  accordingly to each vertex's threshold and exposure.
 }
 
-\code{seed.nodes} can be \code{"marginal"}, \code{"central"} or \code{"random"},
+When \code{seed.nodes} is a character scalar it can be \code{"marginal"}, \code{"central"} or \code{"random"},
 So each of these values sets the initial adopters using the vertices with lowest
 degree, with highest degree or completely randomly. The number of early adoptes
 is set as \code{seed.p.adopt * n}. Please note that when marginal nodes are
 set as seed it may be the case that no diffusion process is attained as the
-chosen set of first adopters can be isolated.
+chosen set of first adopters can be isolated. Any other case will be considered
+as an index (via \code{\link{[<-}} methods), hence the user can manually set the set of initial adopters, for example
+if the user sets \code{seed.nodes=c(1, 4, 7)} then nodes 1, 4 and 7 will be
+selected as initial adopters.
 
-The argument \code{seed.graph} allows the user to set the algorithm used to
-generate the first network (network in t=1). This can be either "scale-free"
+The argument \code{seed.graph} can be either a function that generates a graph
+(Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}})), a
+graph itself or a character scalar in which the user sets the algorithm used to
+generate the first network (network in t=1), this can be either "scale-free"
 (Barabasi-Albert model using the \code{\link{rgraph_ba}} function, the default),
 \code{"bernoulli"} (Erdos-Renyi model using the \code{\link{rgraph_er}} function),
 or \code{"small-world"} (Watts-Strogatz model using the \code{\link{rgraph_ws}}
 function). The list \code{rgraph.args} passes arguments to the chosen algorithm.
 
 When \code{rewire=TRUE}, the networks that follow t=1 will be generated using the
-\code{\link{rewire_graph}} function as \eqn{G(t) = G(t-1)}.
+\code{\link{rewire_graph}} function as \eqn{G(t) = R(G(t-1))}, where \eqn{R}
+is the rewiring algorithm.
 
-Finally, \code{threshold.dist} sets the threshold for each vertex in the graph.
+The argument \code{threshold.dist} sets the threshold for each vertex in the graph.
 It is applied using \code{sapply} as follows
 
 \preformatted{
@@ -83,23 +88,32 @@ sapply(1:n, threshold.dist)
 }
 
 By default sets the threshold to be random for each node in the graph.
+
+If \code{sgraph} is provided, no random graph is generated and the simulation
+is applied using that graph instead.
 }
 \examples{
 # Asimple example -----------------------------------------------------------
-z <- rdiffnet(50,10)
+set.seed(123)
+z <- rdiffnet(100,10)
 z
 summary(z)
 
 # A more complex example: Adopt if at least one neighbor has adopted --------
-y <- rdiffnet(50, 10, threshold.dist=function(x) 1,
+y <- rdiffnet(100, 10, threshold.dist=function(x) 1,
     exposure.args=list(valued=FALSE, normalized=FALSE))
+
+# Re thinking the Adoption of Tetracycline ----------------------------------
+newMI <- rdiffnet(seed.graph = medInnovationsDiffNet$graph,
+ threshold.dist = threshold(medInnovationsDiffNet), rewire=FALSE)
+
 }
 \author{
-Vega Yon
+George G. Vega Yon
 }
 \seealso{
 Other simulation functions: \code{\link{rewire_graph}},
   \code{\link{rgraph_ba}}, \code{\link{rgraph_er}},
-  \code{\link{rgraph_ws}}
+  \code{\link{rgraph_ws}}, \code{\link{ring_lattice}}
 }
 

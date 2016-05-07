@@ -9,6 +9,9 @@ The full list of options follows:
 \item{self}{FALSE}
 \item{multiple}{FALSE}
 \item{tol}{1e-8 (used for package testing)}
+\item{valued}{FALSE}
+\item{outgoing}{TRUE}
+\item{keep.isolates}{TRUE}
 }
 \description{
 \pkg{netdiffuseR} default options
@@ -23,6 +26,6 @@ getOption("diffnet.multiple")
 getOption("diffnet.self")
 }
 \author{
-Vega Yon
+George G. Vega Yon
 }
 

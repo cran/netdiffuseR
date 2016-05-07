@@ -40,7 +40,7 @@ omitting such observations leads to biased results (van den Bulte & Iyengar,
 2011).
 }
 \author{
-Valente, T.W.
+Thomas W. Valente
 }
 \references{
 Burt, R. S. (1987). "Social Contagion and Innovation: Cohesion versus
@@ -84,7 +84,9 @@ Analysis in the Social Sciences (pp. 98–116). New York: Cambridge University P
 }
 \seealso{
 Other diffusion datasets: \code{\link{brfarmersDiffNet}},
-  \code{\link{brfarmers}}, \code{\link{kfamilyDiffNet}},
+  \code{\link{brfarmers}}, \code{\link{fakeDynEdgelist}},
+  \code{\link{fakeEdgelist}}, \code{\link{fakesurveyDyn}},
+  \code{\link{fakesurvey}}, \code{\link{kfamilyDiffNet}},
   \code{\link{kfamily}},
   \code{\link{medInnovationsDiffNet}},
   \code{\link{medInnovations}}

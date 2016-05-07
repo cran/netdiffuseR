@@ -26,9 +26,9 @@ for (g in names(EL_digraph)) {
 
   # Arguments length
   test_that(paste0("Length of inputs in edgelist_adjmat should match (detecting error) - ",g), {
-    expect_error(edgelist_to_adjmat(EL_digraph[[g]], weights = w[-1], undirected=FALSE), "Error.+same length")
-    expect_error(edgelist_to_adjmat(EL_digraph[[g]], times = tim[-1], undirected=FALSE), "Error.+same length")
-    expect_error(edgelist_to_adjmat(EL_digraph[[g]], times = tim, weights = w[-1], undirected=FALSE), "Error.+same length")
+    expect_error(edgelist_to_adjmat(EL_digraph[[g]], w = w[-1], undirected=FALSE), "should have the same length")
+    expect_error(edgelist_to_adjmat(EL_digraph[[g]], t0 = tim[-1], undirected=FALSE), "should have the same length")
+    expect_error(edgelist_to_adjmat(EL_digraph[[g]], t0 = tim, w = w[-1], undirected=FALSE), "should have the same length")
   })
 
   #-----------------------------------------------------------------------------
@@ -40,9 +40,9 @@ for (g in names(EL_digraph)) {
   edgelist_recovered <- adjmat_to_edgelist(adjmat , undirected = FALSE)
 
   # Comparing edgelists
-  EL_digraph[[g]] <- EL_digraph[[g]][order(EL_digraph[[g]][,1]),]
+  # EL_digraph[[g]] <- EL_digraph[[g]][order(EL_digraph[[g]][,1]),]
   test_that(paste0("Undirected static edgelist-adjmat-edgelist (should hold) - ",g), {
-    expect_equivalent(edgelist_recovered, as.matrix(EL_digraph[[g]]))
+    expect_equivalent(edgelist_recovered[,1:2], as.matrix(EL_digraph[[g]]))
   })
 
   # Comparing adjmatrices
@@ -56,26 +56,23 @@ for (g in names(EL_digraph)) {
 
   # Creating the output graph
   edgelist_recovered <- adjmat_to_edgelist(
-    edgelist_to_adjmat(EL_digraph[[g]], times = tim, undirected = FALSE),
+    edgelist_to_adjmat(EL_digraph[[g]], t0 = tim, undirected = FALSE),
     undirected = FALSE)
 
-  ord <- order(edgelist_recovered$edgelist[,1], edgelist_recovered$edgelist[,2])
-  edgelist_recovered$edgelist <-edgelist_recovered$edgelist[ord,]
-  edgelist_recovered$times <-edgelist_recovered$times[ord]
+  # Collapsing
+  edgelist_recovered <- unique(edgelist_recovered[,1:2])
+  edgelist_recovered <- edgelist_recovered[order(edgelist_recovered[,1]),]
+  EL_digraph[[g]]    <- EL_digraph[[g]][order(EL_digraph[[g]][,1]),]
 
-  ord <- order(EL_digraph[[g]][,1], EL_digraph[[g]][,2])
-  EL_digraph[[g]] <- EL_digraph[[g]][ord,]
-  tim <- tim[ord]
-  # Running the test
   test_that(paste0("Undirected dynamic edgelist-adjmat-edgelist (should hold) - ",g), {
-    expect_equivalent(edgelist_recovered$edgelist, as.matrix(EL_digraph[[g]]))
+    expect_equivalent(edgelist_recovered, as.matrix(EL_digraph[[g]]))
   })
 
   # ----------------------------------------------------------------------------
   # Dynamic graphs (explicitly): As arrays
   # ----------------------------------------------------------------------------
   array_recovered <-
-    lapply(edgelist_to_adjmat(EL_digraph[[g]], times = tim, undirected = FALSE),
+    lapply(edgelist_to_adjmat(EL_digraph[[g]], t0 = tim, undirected = FALSE),
            as.matrix)
 
   dn <- list(rownames(array_recovered[[1]]), colnames(array_recovered[[1]]),
@@ -86,9 +83,14 @@ for (g in names(EL_digraph)) {
     dimnames = dn)
 
   edgelist_recovered <- adjmat_to_edgelist(array_recovered, undirected = FALSE)
+
+  times <- edgelist_recovered[,"time"]
+  edgelist_recovered <- unique(edgelist_recovered[,1:2])
+  edgelist_recovered <- edgelist_recovered[order(edgelist_recovered[,1]),]
+
   test_that(paste0("Undirected dynamic edgelist-adjmat-edgelist (should hold) - ", g), {
-    expect_equivalent(edgelist_recovered$edgelist, as.matrix(EL_digraph[[g]]))
-    expect_equivalent(edgelist_recovered$times, tim)
+    expect_equivalent(edgelist_recovered, as.matrix(EL_digraph[[g]]))
+    # expect_equivalent(edgelist_recovered$times, tim)
   })
 
 }
@@ -98,13 +100,13 @@ for (g in names(EL_digraph)) {
 ################################################################################
 context("Time of Adoption (toa_mat, toa_dif)")
 
-times <- c(2001, 2004, 2003, 2008)
+times <- c(2001L, 2004L, 2003L, 2008L)
 
 graph <- lapply(2001:2008, function(x) rgraph_er(4))
 diffnet <- as_diffnet(graph, times)
 
 test_that("Should warn about -times- not been integer", {
-  expect_warning(toa_mat(times), "will be coersed to integer")
+  expect_warning(toa_mat(as.numeric(times)), "will be coersed to integer")
 })
 
 test_that("Dimensions of TOA mat should be ok", {
@@ -155,7 +157,7 @@ edgelist <- cbind(
 set.seed(123)
 tim <- sample(1:4, 4, TRUE)
 adjmat <- edgelist_to_adjmat(edgelist)
-dynadjmat <- edgelist_to_adjmat(edgelist, times=tim)
+dynadjmat <- edgelist_to_adjmat(edgelist, t0=tim)
 diffnet <- as_diffnet(dynadjmat, tim)
 
 test_that("Finding isolated nodes", {

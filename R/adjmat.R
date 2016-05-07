@@ -12,20 +12,18 @@
 #' @param edgelist Two column matrix/data.frame in the form of ego -source- and
 #' alter -target- (see details).
 #' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
-#' @param weights Numeric vector. Strength of ties (optional).
-#' @param times Integer vector. Starting time of the ties (optional).
-#' @param t Integer scalar. If \code{times} but want to repeat the network \code{t} times.
+#' @param w Numeric vector. Strength of ties (optional).
+#' @param t0 Integer vector. Starting time of the ties (optional).
+#' @param t1 Integer vector. Finishing time of the ties (optional).
+#' @param t Integer scalar. Repeat the network \code{t} times (if no \code{t0,t1} are provided).
 #' @param simplify Logical scalar. When TRUE and \code{times=NULL} it will return an adjacency
 #' matrix, otherwise an array of adjacency matrices.
 #' @param undirected Logical scalar. TRUE when the graph is undirected.
 #' @param self Logical scalar. TRUE when self edges are excluded.
 #' @param multiple Logical scalar. TRUE when multiple edges should not be included
 #' (see details).
-#' @param use.incomplete Logical scalar. When FALSE, rows with \code{NA/NULL} values
-#' (isolated vertices unless have autolink) will be droped
-#' and will not be considered in the graph, which may reduce the size of the
-#' adjacency matrix (see
-#' details).
+#' @param keep.isolates Logical scalar. When FALSE, rows with \code{NA/NULL} values
+#' (isolated vertices unless have autolink) will be droped (see details).
 #' @param recode.ids Logical scalar. When TRUE ids are recoded using \code{\link{as.factor}}
 #' (see details).
 #' @details
@@ -41,23 +39,16 @@
 #' as many times it appears in the edgelist. So if a vertex \eqn{\{i,j\}}{{i,j}} appears 2
 #' times, the adjacency matrix element \code{(i,j)} will be 2.
 #'
-#' Including incomplete cases, \code{use.incomplete=TRUE}, can lead to an adjacency matrix
-#' with isolated vertices. Otherwise, when \code{use.incomplete=FALSE}, if all the
-#' edges in which a vertex participates have incomplete information in any of the
-#' variables (a NA, NULL or NaN value, see \code{\link{complete.cases}}), it
-#' will be dropped from the graph, thus, reducing the size of the adjacency
-#' matrix by not including isolated vertices. Notice that the \emph{best way of adding %
-#' isolated vertices} is to include them in the
-#' edgelist as connecting to themselves. The option \code{self=FALSE} will not
-#' drop the isolated vertices (but the adjacency matrix will have a 0-diagonal)
-#' but the algorithm will include them on the graph.
+#' Edges with incomplete information (missing data on \code{w} or \code{times}) are
+#' not included on the graph. Incomplete cases are tagged using \code{\link{complete.cases}}
+#' and can be retrieved by the user by accessing the attribute \code{incomplete}.
 #'
 #' The function performs several checks before starting to create the adjacency
 #' matrix. These are:
 #' \itemize{
 #'  \item{Dimensions of the inputs, such as number of columns and length of vectors}
 #'  \item{Having complete cases. If anly edge has a non-numeric value such as NAs or
-#'  NULL in any variable (including \code{times} and \code{weights}), it will be
+#'  NULL in either \code{times} or \code{w}, it will be
 #'  removed. A full list of such edges can be retrieved from the attribute
 #'  \code{incomplete}}
 #'  \item{Nodes and times ids coding}
@@ -72,13 +63,17 @@
 #'
 #' @return In the case of \code{edgelist_to_adjmat} either an adjacency matrix
 #' (if times is NULL) or an array of these (if times is not null). For
-#' \code{adjmat_to_edgelist} the output is an edgelist.
+#' \code{adjmat_to_edgelist} the output is an edgelist with the following columns:
+#' \item{ego}{Origin of the tie.}
+#' \item{alter}{Target of the tie.}
+#' \item{value}{Value in the adjacency matrix.}
+#' \item{time}{Either a 1 (if the network is static) or the time stamp of the tie.}
 #' @export
 #' @examples
 #' # Base data
 #' set.seed(123)
 #' n <- 5
-#' edgelist <- rgraph_er(n, as.edgelist=TRUE)
+#' edgelist <- rgraph_er(n, as.edgelist=TRUE)[,c("ego","alter")]
 #' times <- sample.int(3, nrow(edgelist), replace=TRUE)
 #' w <- abs(rnorm(nrow(edgelist)))
 #'
@@ -86,17 +81,17 @@
 #' edgelist_to_adjmat(edgelist)
 #' edgelist_to_adjmat(edgelist, undirected = TRUE)
 #'
-#' # Using weights
+#' # Using w
 #' edgelist_to_adjmat(edgelist, w)
 #' edgelist_to_adjmat(edgelist, w, undirected = TRUE)
 #'
 #' # Using times
-#' edgelist_to_adjmat(edgelist, times = times)
-#' edgelist_to_adjmat(edgelist, times = times, undirected = TRUE)
+#' edgelist_to_adjmat(edgelist, t0 = times)
+#' edgelist_to_adjmat(edgelist, t0 = times, undirected = TRUE)
 #'
-#' # Using times and weights
-#' edgelist_to_adjmat(edgelist, times = times, weights = w)
-#' edgelist_to_adjmat(edgelist, times = times, undirected = TRUE, weights = w)
+#' # Using times and w
+#' edgelist_to_adjmat(edgelist, t0 = times, w = w)
+#' edgelist_to_adjmat(edgelist, t0 = times, undirected = TRUE, w = w)
 #'
 #' # Not recoding ----------------------------------------------------
 #' # Notice that vertices 3, 4 and 5 are not present in this graph.
@@ -110,24 +105,39 @@
 #'
 #' # Generates an adjmat of size 7 x 7
 #' edgelist_to_adjmat(graph, recode.ids=FALSE)
+#'
+#' # Dynamic with spells -------------------------------------------------------
+#' edgelist <- rbind(
+#'    c(1,2,NA,1990),
+#'    c(2,3,NA,1991),
+#'    c(3,4,1991,1992),
+#'    c(4,1,1992,1993),
+#'    c(1,2,1993,1993)
+#' )
+#'
+#' graph <- edgelist_to_adjmat(edgelist[,1:2], t0=edgelist[,3], t1=edgelist[,4])
+#'
+#' # Creating a diffnet object with it so we can apply the plot_diffnet function
+#' diffnet <- as_diffnet(graph, toa=1:4)
+#' plot_diffnet(diffnet, displaylabels=TRUE)
 #' @keywords manip
 #' @family data management functions
 #' @include graph_data.R
-#' @author Vega Yon, Dyal, Hayes & Valente
+#' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 edgelist_to_adjmat <- function(
-  edgelist, weights=NULL,
-  times=NULL, t=NULL, simplify=TRUE,
+  edgelist, w=NULL,
+  t0=NULL, t1=NULL, t=NULL, simplify=TRUE,
   undirected=getOption("diffnet.undirected"), self=getOption("diffnet.self"), multiple=getOption("diffnet.multiple"),
-  use.incomplete=TRUE, recode.ids=TRUE) {
+  keep.isolates=TRUE, recode.ids=TRUE) {
 
   switch (class(edgelist),
     data.frame = edgelist_to_adjmat.data.frame(
-      edgelist, weights, times, t, simplify, undirected, self, multiple,
-      use.incomplete, recode.ids
+      edgelist, w, t0, t1, t, simplify, undirected, self, multiple,
+      keep.isolates, recode.ids
     ),
     matrix = edgelist_to_adjmat.matrix(
-      edgelist, weights, times, t, simplify, undirected, self, multiple,
-      use.incomplete, recode.ids),
+      edgelist, w, t0, t1, t, simplify, undirected, self, multiple,
+      keep.isolates, recode.ids),
     stop("-edgelist- should be either a data.frame, or a matrix.")
   )
 }
@@ -135,49 +145,67 @@ edgelist_to_adjmat <- function(
 # @rdname edgelist_to_adjmat
 # @export
 edgelist_to_adjmat.data.frame <- function(
-  edgelist, weights,
-  times, t, simplify,
+  edgelist, w,
+  t0,t1, t, simplify,
   undirected, self, multiple,
-  use.incomplete, recode.ids) {
+  keep.isolates, recode.ids) {
 
-  edgelist_to_adjmat.matrix(as.matrix(edgelist), weights, times, t, simplify,
-                            undirected, self, multiple, use.incomplete,
+  edgelist_to_adjmat.matrix(as.matrix(edgelist), w, t0,t1, t, simplify,
+                            undirected, self, multiple, keep.isolates,
                             recode.ids)
 }
 
 # @rdname edgelist_to_adjmat
 # @export
 edgelist_to_adjmat.matrix <- function(
-  edgelist, weights,
-  times, t, simplify,
+  edgelist, w,
+  t0, t1,
+  t, simplify,
   undirected, self, multiple,
-  use.incomplete, recode.ids) {
+  keep.isolates, recode.ids) {
 
   # Step 0: Checking dimensions
   if (ncol(edgelist) !=2) stop("Edgelist must have 2 columns")
-  if (length(times) && nrow(edgelist) != length(times)) stop("-times- should have the same length as number of rows in -edgelist-")
-  if (length(weights) && nrow(edgelist) != length(weights)) stop("-weights- should have the same length as number of rows in -edgelist-")
+  if (length(t0) && nrow(edgelist) != length(t0))
+    stop("-t0- should have the same length as number of rows in -edgelist-.",
+         " Currently they are ",length(t0), " and ", nrow(edgelist),
+         " respectively.")
+  if (length(t1) && nrow(edgelist) != length(t1))
+    stop("-t1- should have the same length as number of rows in -edgelist-.",
+         " Currently they are ",length(t1), " and ", nrow(edgelist),
+         " respectively.")
+  if (length(w) && nrow(edgelist) != length(w))
+    stop("-w- should have the same length as number of rows in -edgelist-.",
+         " Currently they are ",length(w), " and ", nrow(edgelist),
+         " respectively.")
 
   ##############################################################################
   # Step 1: Incomplete cases.
   # Finding incomplete cases. This is always done since we need to provide a
   # complete list of variables to the C++ function, otherwise it will throw
   # an error.
-  complete <- complete.cases(cbind(edgelist, times, weights))
+  if (length(w)) complete <- complete.cases( w)
+  else complete <- rep(TRUE, nrow(edgelist))
+  edgelist <- edgelist[complete,]
+
   incomplete <- which(!complete)
+
+  # Getting the list of isolated vertices
+  not.isolated <- which(!is.na(edgelist[,1]) & !is.na(edgelist[,2]))
 
   # If the user chooses to drop incomplete, then what changes is the selection
   # of ids in the graph.
-  # Times and weights MUST be removed since wont be used in the C++ function
+  # Times and w MUST be removed since wont be used in the C++ function
   if (length(incomplete))
-    warning("Some vertices had NA/NULL values:\n\t",
+    warning("Some edges a had NA/NULL value on either -times- or -w-:\n\t",
             paste0(head(incomplete,20), collapse = ", "),
             ifelse(length(incomplete)>20,", ...", ""),
-            "\nThe complete list will be stored as an attribute of the resulting",
+            "\nThese won't be included in the adjacency matrix. The complete list will be stored as an attribute of the resulting",
             " adjacency matrix, namely, -incomplete-.")
 
+
   # If no.incomplete is activated, then the vectors should be fixed
-  if (!use.incomplete) edgelist <- edgelist[complete,,drop=FALSE]
+  if (!keep.isolates) edgelist <- edgelist[not.isolated,,drop=FALSE]
 
   ##############################################################################
   # Step 2: Recoding nodes ids
@@ -185,34 +213,45 @@ edgelist_to_adjmat.matrix <- function(
   if (recode.ids) {
     # Recoding
     dat <- recode(edgelist)
+    n <- max(dat, na.rm = TRUE)
 
     # Retrieving codes + labels. If use.incomplete == FALSE, then the edgelist
     # has already been filtered
     recodedids <- attr(dat, "recode")
-    if (use.incomplete) dat <- dat[complete,]
+    if (keep.isolates) dat <- dat[not.isolated,]
     attr(dat, "recode") <- recodedids
     rm(recodedids)
   }
-  else dat <- edgelist
-
-  n <- max(dat, na.rm = TRUE)
+  else {
+    dat <- edgelist
+    n <- max(dat, na.rm = TRUE)
+  }
 
   ##############################################################################
-  # Step 3: Preparing -times- and -weights- considering complete cases.
+  # Step 3: Preparing -times- and -w- considering complete cases.
   # Times + recoding
   m <- nrow(dat)
-  if (length(times)) times <- times[complete]
-  else times <- rep(1, m)
+  if (length(t0)) t0 <- t0[complete][not.isolated]
+  else t0 <- rep(NA, m)
 
-  oldtimes <- range(times)
+  if (length(t1)) t1 <- t1[complete][not.isolated]
+  else t1 <- rep(NA, m)
+
+  suppressWarnings(oldtimes <- range(c(t0,t1), na.rm=TRUE))
+  if (all(!is.finite(oldtimes))) oldtimes <- rep(1,2)
   oldtimes <- oldtimes[1]:oldtimes[2]
-  times    <- times - min(times, na.rm = TRUE) + 1L
 
-  if (!length(t)) t <- max(times, na.rm = TRUE)
+  t0    <- t0 - oldtimes[1] + 1L
+  t1    <- t1 - oldtimes[1] + 1L
+
+  # Replacing NAs
+  t0[is.na(t0)] <- 1
+  if (!length(t)) t <- max(c(t0,t1), na.rm=TRUE)
+  t1[is.na(t1)] <- t
 
   # Weights
-  if (length(weights)) weights <- weights[complete]
-  else weights <- rep(1, m)
+  if (length(w)) w <- w[complete][not.isolated]
+  else w <- rep(1, m)
 
   ##############################################################################
   # Computing the graph
@@ -222,9 +261,9 @@ edgelist_to_adjmat.matrix <- function(
   else labs <- 1:n
 
   for(i in 1:t) {
-    index <- which(times <= i)
+    index <- which((t0 <= i) & (i <= t1))
     graph[[i]] <- edgelist_to_adjmat_cpp(
-      dat[index,,drop=FALSE], weights[index], n, undirected, self, multiple)
+      dat[index,,drop=FALSE], w[index], n, undirected, self, multiple)
 
     # Naming
     dimnames(graph[[i]]) <- list(labs, labs)
@@ -245,79 +284,109 @@ edgelist_to_adjmat.matrix <- function(
 
 #' @rdname edgelist_to_adjmat
 #' @export
-adjmat_to_edgelist <- function(graph, undirected=getOption("diffnet.undirected")) {
+adjmat_to_edgelist <- function(
+  graph,
+  undirected=getOption("diffnet.undirected", FALSE),
+  keep.isolates = getOption("diffnet.keep.isolates", TRUE)
+  ) {
 
-  switch (class(graph),
-          list      = adjmat_to_edgelist.list(graph, undirected),
-          array     = adjmat_to_edgelist.array(graph, undirected),
-          dgCMatrix = adjmat_to_edgelist.dgCMatrix(graph, undirected),
-          matrix    = adjmat_to_edgelist.matrix(graph, undirected),
+  out <- switch (class(graph),
+          list      = adjmat_to_edgelist.list(graph, undirected, keep.isolates),
+          array     = adjmat_to_edgelist.array(graph, undirected, keep.isolates),
+          dgCMatrix = cbind(adjmat_to_edgelist.dgCMatrix(graph, undirected, keep.isolates), 1),
+          matrix    = cbind(adjmat_to_edgelist.matrix(graph, undirected, keep.isolates),1),
           stopifnot_graph(graph)
   )
+
+  colnames(out) <- c("ego", "alter", "value", "time")
+  out
 }
 
 # @rdname edgelist_to_adjmat
 # @export
-adjmat_to_edgelist.matrix <- function(graph, undirected=getOption("diffnet.undirected")) {
-  adjmat_to_edgelist_cpp(methods::as(graph, "dgCMatrix"), undirected)
+adjmat_to_edgelist.matrix <- function(graph, undirected, keep.isolates) {
+  # as.integer(factor(diffnet$meta$ids[fakeDynEdgelist[,1]], diffnet$meta$ids))
+  out <- adjmat_to_edgelist_cpp(methods::as(graph, "dgCMatrix"), undirected)
+
+  # If keep isolates
+  if (keep.isolates) {
+    N <- 1:nvertices(graph)
+    test <- which(!(N %in% unlist(out[,1:2])))
+
+    # If there are isolates
+    if (length(test)) out <- rbind(out, cbind(test, NA, NA))
+  }
+
+  return(out)
 }
 
 # @rdname edgelist_to_adjmat
 # @export
-adjmat_to_edgelist.dgCMatrix <- function(graph, undirected=getOption("diffnet.undirected")) {
-  adjmat_to_edgelist_cpp(graph, undirected)
+adjmat_to_edgelist.dgCMatrix <- function(graph, undirected, keep.isolates) {
+  out <- adjmat_to_edgelist_cpp(graph, undirected)
+
+  # If keep isolates
+  if (keep.isolates) {
+    N <- 1:nvertices(graph)
+    test <- which(!(N %in% unlist(out[,1:2])))
+
+    # If there are isolates
+    if (length(test)) out <- rbind(out, cbind(test, NA, NA))
+  }
+
+  return(out)
 }
 
 # @rdname edgelist_to_adjmat
 # @export
-adjmat_to_edgelist.array <- function(graph, undirected=getOption("diffnet.undirected")) {
-  edgelist <- matrix(ncol=2,nrow=0)
+adjmat_to_edgelist.array <- function(graph, undirected, keep.isolates) {
+  edgelist <- matrix(ncol=3,nrow=0)
   times <- vector('integer',0L)
 
   # Getting the names
-  tnames <- dimnames(graph)[[3]]
+  tnames <- as.integer(dimnames(graph)[[3]])
   if (!length(tnames)) tnames <- 1:dim(graph)[3]
 
   for (i in 1:dim(graph)[3]) {
-    x <- adjmat_to_edgelist.matrix(graph[,,i], undirected)
+    x <- adjmat_to_edgelist.matrix(graph[,,i], undirected, keep.isolates)
     edgelist <- rbind(edgelist, x)
     times <- c(times, rep(tnames[i],nrow(x)))
   }
 
-  # Adjusting the length
-  ids <- apply(edgelist, 1, paste0, collapse="")
-  times <- as.integer(unname(tapply(times, ids, min)))
+  # # Adjusting the length
+  # ids <- apply(edgelist, 1, paste0, collapse="")
+  # times <- as.integer(unname(tapply(times, ids, min)))
+  #
+  # edgelist <- unique(edgelist)
+  # edgelist <- edgelist[order(edgelist[,1],edgelist[,2]),]
 
-  edgelist <- unique(edgelist)
-  edgelist <- edgelist[order(edgelist[,1],edgelist[,2]),]
-
-  return(list(edgelist=edgelist, times=times))
+  return(cbind(edgelist, times=times))
 }
 
 # @rdname edgelist_to_adjmat
 # @export
-adjmat_to_edgelist.list <- function(graph, undirected=getOption("diffnet.undirected")) {
-  edgelist <- matrix(ncol=2,nrow=0)
+adjmat_to_edgelist.list <- function(graph, undirected, keep.isolates) {
+  edgelist <- matrix(ncol=3,nrow=0)
   times <- vector('integer',0L)
 
   # Getting the names
-  tnames <- names(graph)
+  tnames <- as.integer(names(graph))
   if (!length(tnames)) tnames <- 1:dim(graph)[3]
 
   for (i in 1:length(graph)) {
-    x <- adjmat_to_edgelist.dgCMatrix(graph[[i]], undirected)
+    x <- adjmat_to_edgelist.dgCMatrix(graph[[i]], undirected, keep.isolates)
     edgelist <- rbind(edgelist, x)
     times <- c(times, rep(tnames[i],nrow(x)))
   }
 
-  # Adjusting the length
-  ids <- apply(edgelist, 1, paste0, collapse="")
-  times <- as.integer(unname(tapply(times, ids, min)))
+  # # Adjusting the length
+  # ids <- apply(edgelist, 1, paste0, collapse="")
+  # times <- as.integer(unname(tapply(times, ids, min)))
+  #
+  # edgelist <- unique(edgelist)
+  # edgelist <- edgelist[order(edgelist[,1],edgelist[,2]),]
 
-  edgelist <- unique(edgelist)
-  edgelist <- edgelist[order(edgelist[,1],edgelist[,2]),]
-
-  return(list(edgelist=edgelist, times=times))
+  return(cbind(edgelist, times=times))
 }
 
 # # Benchmark with the previous version
@@ -385,7 +454,7 @@ adjmat_to_edgelist.list <- function(graph, undirected=getOption("diffnet.undirec
 #'  \item{\code{adopt}}{has 1's only for the year of adoption and 0 for the rest.}
 #' @keywords manip
 #' @include graph_data.R
-#' @author Vega Yon, Dyal, Hayes & Valente
+#' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 toa_mat <- function(obj, labels=NULL, t0=NULL, t1=NULL) {
 
   if (!inherits(obj, "diffnet")) {
@@ -472,7 +541,7 @@ toa_mat.integer <- function(times, labels=NULL,
 #' toa_diff(times)
 #' @keywords manip
 #' @include graph_data.R
-#' @author Vega Yon, Dyal, Hayes & Valente
+#' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 toa_diff <- function(obj, t0=NULL, labels=NULL) {
 
   # Calculating t0 (if it was not provided)
@@ -562,7 +631,7 @@ toa_diff.integer <- function(times, t0, labels) {
 #' drop_isolated(graph)
 #' @keywords manip
 #' @family data management functions
-#' @author Vega Yon
+#' @author George G. Vega Yon
 isolated <- function(graph, undirected=getOption("diffnet.undirected")) {
   switch (class(graph),
     matrix = isolated.matrix(graph, undirected),
@@ -594,11 +663,13 @@ isolated.dgCMatrix <- function(graph, undirected=getOption("diffnet.undirected")
 # @export
 # @rdname isolated
 isolated.array <- function(graph, undirected=getOption("diffnet.undirected")) {
-  nper <- dim(graph)[3]
-  n    <- dim(graph)[2]
+  nper <- as.integer(dim(graph)[3])
+  n    <- as.integer(dim(graph)[2])
 
   # Creating output list and anciliary vector (to see if is isolated or not!)
-  iso  <- Matrix::Matrix(0, ncol=nper, nrow=n, sparse=TRUE)
+  # iso  <- Matrix::Matrix(0, ncol=nper, nrow=n, sparse=TRUE)
+  iso <- methods::new("dgCMatrix", Dim=c(n,nper), p=rep(0L,nper + 1L))
+
   for(i in 1:nper)
     iso[,i] <- isolated_cpp(methods::as(graph[,,i], "dgCMatrix"), undirected)
 
@@ -624,11 +695,13 @@ isolated.array <- function(graph, undirected=getOption("diffnet.undirected")) {
 # @export
 # @rdname isolated
 isolated.list <- function(graph, undirected=getOption("diffnet.undirected")) {
-  nper<- length(graph)
-  n   <- nrow(graph[[1]])
+  nper<- as.integer(length(graph))
+  n   <- as.integer(nrow(graph[[1]]))
 
   # Creating output list and anciliary vector (to see if is isolated or not!)
-  iso  <- Matrix::Matrix(0, ncol=nper, nrow=n, sparse=TRUE)
+  # iso  <- Matrix::Matrix(0, ncol=nper, nrow=n, sparse=TRUE)
+  iso <- methods::new("dgCMatrix", Dim=c(n,nper), p=rep(0L,nper + 1L))
+
   for(i in 1:nper)
     iso[,i] <- isolated_cpp(graph[[i]], undirected)
   isolated <- structure(

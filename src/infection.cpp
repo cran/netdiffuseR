@@ -10,7 +10,9 @@ arma::mat infection_cpp(
     int K = 1,
     double r = 0.5,
     bool expdiscount = false,
-    int n=0, int T=0, bool valued=false) {
+    int n=0,
+    bool valued=false,
+    bool outgoing=true) {
 
 //   // Coersing a NumericVector into a cube for ease of use
 //   IntegerVector dims=graph.attr("dim");
@@ -25,14 +27,19 @@ arma::mat infection_cpp(
   int ti, tj;
 
   // Creating discount variable, firts, must be truncated.
-  if (K >= T) {
+  if (K >= graph.size()) {
     warning("Too many periods selected, will be truncated to T-1.");
-    K = T - 1;
+    K = graph.size() - 1;
   }
+
+  // // Checking classes
+  // for (int i = 0; i< graph.length();i++)
+  //   if ()
 
   // The discount can be either exponential (1 + r)^(k-1), or
   // lineal in the form of k.
-  double * discount = new double[K];
+  // double * discount = new double[K]
+  std::vector< double > discount(K);
   if (!expdiscount) {
     for(int k=1;k<=K;k++)
       discount[k-1] = k;
@@ -55,7 +62,7 @@ arma::mat infection_cpp(
 
     // Capturing variables
     ti = times(i);
-    if (ti == T) continue;
+    if (ti == graph.size()) continue;
 
     double numerator = 0.0;
     double denominator = 0.0;
@@ -70,11 +77,12 @@ arma::mat infection_cpp(
 
       // If the required time period does not exists, then continue, recall that
       // vectors can be reach up to T - 1
-      if (t >= T) continue;
+      if (t >= graph.size()) continue;
 
       // Storing the graph
-      arma::sp_mat graph_cube = graph[t];
-      if (!valued) graph_cube = arma::spones(graph_cube);
+      arma::sp_mat graph_cube = graph.at(t);
+      if (!valued)   graph_cube = arma::spones(graph_cube);
+      if (!outgoing) graph_cube = graph_cube.t();
 
       for(int j=0;j<n;j++) {
         if (i==j) continue;
@@ -111,7 +119,8 @@ arma::colvec susceptibility_cpp(
     int K = 1,
     double r = 0.5,
     bool expdiscount = false,
-    int n=0, int T=0, bool valued=false) {
+    int n=0, bool valued=false,
+    bool outgoing=true) {
 
   // Coersing a NumericVector into a cube for ease of use
 //   IntegerVector dims=graph.attr("dim");
@@ -126,14 +135,15 @@ arma::colvec susceptibility_cpp(
   int ti, tj;
 
   // Creating discount variable, firts, must be truncated.
-  if (K >= T) {
+  if (K >= graph.size()) {
     warning("Too many periods selected, will be truncated to T-1.");
-    K = T - 1;
+    K = graph.size() - 1;
   }
 
   // The discount can be either exponential (1 + r)^(k-1), or
   // lineal in the form of k.
-  double * discount = new double[K];
+  // double * discount = new double[K];
+  std::vector< double > discount(K);
   if (!expdiscount) {
     for(int k=1;k<=K;k++)
       discount[k-1] = k;
@@ -176,8 +186,9 @@ arma::colvec susceptibility_cpp(
       if (t <= 1) continue;
 
       // Storing the graph
-      arma::sp_mat graph_cube = graph[t - 1];
-      if (!valued) graph_cube = arma::spones(graph_cube);
+      arma::sp_mat graph_cube = graph.at(t - 1);
+      if (!valued)   graph_cube = arma::spones(graph_cube);
+      if (!outgoing) graph_cube = graph_cube.t();
 
       for(int j=0;j<n;j++) {
         if (i==j) continue;

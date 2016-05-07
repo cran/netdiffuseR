@@ -5,7 +5,7 @@
 \title{Compute ego/alter edge coordinates considering alter's size and aspect ratio}
 \usage{
 edges_coords(graph, toa, x, y, vertex_cex, undirected = TRUE,
-  no_contemporary = TRUE)
+  no_contemporary = TRUE, dev = as.numeric(c()), ran = as.numeric(c()))
 }
 \arguments{
 \item{graph}{A square matrix of size \eqn{n}. Adjacency matrix.}
@@ -23,16 +23,18 @@ of the x-axis (see \code{\link{symbols}}).}
 
 \item{no_contemporary}{Logical scalar. Whether to return (calcular) edges'
 coordiantes for vertices with the same time of adoption (see details).}
+
+\item{dev}{Numeric vector of size 2. Height and width of the device (see details).}
+
+\item{ran}{Numeric vector of size 2. Range of the x and y axis (see details).}
 }
 \value{
-A numeric matrix of size \eqn{m\times 8}{m * 8} with the following
+A numeric matrix of size \eqn{m\times 5}{m * 5} with the following
 columns:
 \item{x0, y0}{Edge origin}
 \item{x1, y1}{Edge target}
-\item{size0, size1}{Size of the vertices of ego and alter in terms of the x-axis}
 \item{alpha}{Relative angle between \code{(x0,y0)} and \code{(x1,y1)} in terms
 of radians}
-\item{dist}{Relavtide distance between ego and alters' center.}
 With \eqn{m} as the number of resulting edges.
 }
 \description{
@@ -69,8 +71,44 @@ the second term in \eqn{y_1'}{y1'} is negative iff \eqn{y_0 < y_1}{y0<y1}.
 }
 }
 
+The same process (with sign inverted) is applied to the edge starting piont.
 The resulting values, \eqn{x_1',y_1'}{x1',y1'} can be used with the function
 \code{\link{arrows}}. This is the workhorse function used in \code{\link{plot_threshold}}.
+
+The \code{dev} argument provides a reference to rescale the plot accordingly
+to the device, and former, considering the size of the margins as well (this
+can be easily fetched via \code{par("pin")}, plot area in inches).
+
+On the other hand, \code{ran} provides a reference for the adjustment
+according to the range of the data, this is \code{range(x)[2] - range(x)[1]}
+and \code{range(y)[2] - range(y)[1]} respectively.
+}
+\examples{
+# --------------------------------------------------------------------------
+data(medInnovationsDiffNet)
+library(sna)
+
+# Computing coordinates
+set.seed(79)
+coords <- sna::gplot(as.matrix(medInnovationsDiffNet$graph[[1]]))
+
+# Getting edge coordinates
+vcex <- rep(1.5, nnodes(medInnovationsDiffNet))
+ecoords <- edges_coords(
+  medInnovationsDiffNet$graph[[1]],
+  diffnet.toa(medInnovationsDiffNet),
+  x = coords[,1], y = coords[,2],
+  vertex_cex = vcex,
+  dev = par("pin")
+  )
+
+ecoords <- as.data.frame(ecoords)
+
+# Plotting
+symbols(coords[,1], coords[,2], circles=vcex,
+  inches=FALSE, xaxs="i", yaxs="i")
+
+with(ecoords, arrows(x0,y0,x1,y1, length=.1))
 }
 \keyword{dplot}
 \keyword{misc}

@@ -25,20 +25,40 @@ drop_isolated_cpp <- function(adjmat, isolated, undirected = TRUE) {
     .Call('netdiffuseR_drop_isolated_cpp', PACKAGE = 'netdiffuseR', adjmat, isolated, undirected)
 }
 
-egonet_attrs_cpp <- function(graph, V, attrs, outer = TRUE, self = TRUE, valued = TRUE) {
-    .Call('netdiffuseR_egonet_attrs_cpp', PACKAGE = 'netdiffuseR', graph, V, attrs, outer, self, valued)
+egonet_attrs_cpp <- function(graph, V, outer = TRUE, self = TRUE, valued = TRUE) {
+    .Call('netdiffuseR_egonet_attrs_cpp', PACKAGE = 'netdiffuseR', graph, V, outer, self, valued)
 }
 
-infection_cpp <- function(graph, times, normalize = TRUE, K = 1L, r = 0.5, expdiscount = FALSE, n = 0L, T = 0L, valued = FALSE) {
-    .Call('netdiffuseR_infection_cpp', PACKAGE = 'netdiffuseR', graph, times, normalize, K, r, expdiscount, n, T, valued)
+infection_cpp <- function(graph, times, normalize = TRUE, K = 1L, r = 0.5, expdiscount = FALSE, n = 0L, valued = FALSE, outgoing = TRUE) {
+    .Call('netdiffuseR_infection_cpp', PACKAGE = 'netdiffuseR', graph, times, normalize, K, r, expdiscount, n, valued, outgoing)
 }
 
-susceptibility_cpp <- function(graph, times, normalize = TRUE, K = 1L, r = 0.5, expdiscount = FALSE, n = 0L, T = 0L, valued = FALSE) {
-    .Call('netdiffuseR_susceptibility_cpp', PACKAGE = 'netdiffuseR', graph, times, normalize, K, r, expdiscount, n, T, valued)
+susceptibility_cpp <- function(graph, times, normalize = TRUE, K = 1L, r = 0.5, expdiscount = FALSE, n = 0L, valued = FALSE, outgoing = TRUE) {
+    .Call('netdiffuseR_susceptibility_cpp', PACKAGE = 'netdiffuseR', graph, times, normalize, K, r, expdiscount, n, valued, outgoing)
 }
 
 moran_cpp <- function(x, w) {
     .Call('netdiffuseR_moran_cpp', PACKAGE = 'netdiffuseR', x, w)
+}
+
+sparse_indexes <- function(mat) {
+    .Call('netdiffuseR_sparse_indexes', PACKAGE = 'netdiffuseR', mat)
+}
+
+angle <- function(x0, y0, x1, y1) {
+    .Call('netdiffuseR_angle', PACKAGE = 'netdiffuseR', x0, y0, x1, y1)
+}
+
+sp_trimatl <- function(x) {
+    .Call('netdiffuseR_sp_trimatl', PACKAGE = 'netdiffuseR', x)
+}
+
+sp_diag <- function(x, v) {
+    .Call('netdiffuseR_sp_diag', PACKAGE = 'netdiffuseR', x, v)
+}
+
+unif_rand_w_exclusion <- function(n, e) {
+    .Call('netdiffuseR_unif_rand_w_exclusion', PACKAGE = 'netdiffuseR', n, e)
 }
 
 #' Distribution over a grid
@@ -87,14 +107,14 @@ grid_distribution <- function(x, y, nlevels = 100L) {
 #' @param undirected Logical scalar. Whether the graph is undirected or not.
 #' @param no_contemporary Logical scalar. Whether to return (calcular) edges'
 #' coordiantes for vertices with the same time of adoption (see details).
-#' @return A numeric matrix of size \eqn{m\times 8}{m * 8} with the following
+#' @param dev Numeric vector of size 2. Height and width of the device (see details).
+#' @param ran Numeric vector of size 2. Range of the x and y axis (see details).
+#' @return A numeric matrix of size \eqn{m\times 5}{m * 5} with the following
 #' columns:
 #' \item{x0, y0}{Edge origin}
 #' \item{x1, y1}{Edge target}
-#' \item{size0, size1}{Size of the vertices of ego and alter in terms of the x-axis}
 #' \item{alpha}{Relative angle between \code{(x0,y0)} and \code{(x1,y1)} in terms
 #' of radians}
-#' \item{dist}{Relavtide distance between ego and alters' center.}
 #' With \eqn{m} as the number of resulting edges.
 #' @details
 #'
@@ -127,12 +147,60 @@ grid_distribution <- function(x, y, nlevels = 100L) {
 #' }
 #' }
 #'
+#' The same process (with sign inverted) is applied to the edge starting piont.
 #' The resulting values, \eqn{x_1',y_1'}{x1',y1'} can be used with the function
 #' \code{\link{arrows}}. This is the workhorse function used in \code{\link{plot_threshold}}.
+#'
+#' The \code{dev} argument provides a reference to rescale the plot accordingly
+#' to the device, and former, considering the size of the margins as well (this
+#' can be easily fetched via \code{par("pin")}, plot area in inches).
+#'
+#' On the other hand, \code{ran} provides a reference for the adjustment
+#' according to the range of the data, this is \code{range(x)[2] - range(x)[1]}
+#' and \code{range(y)[2] - range(y)[1]} respectively.
+#'
 #' @keywords misc dplot
+#' @examples
+#' # --------------------------------------------------------------------------
+#' data(medInnovationsDiffNet)
+#' library(sna)
+#'
+#' # Computing coordinates
+#' set.seed(79)
+#' coords <- sna::gplot(as.matrix(medInnovationsDiffNet$graph[[1]]))
+#'
+#' # Getting edge coordinates
+#' vcex <- rep(1.5, nnodes(medInnovationsDiffNet))
+#' ecoords <- edges_coords(
+#'   medInnovationsDiffNet$graph[[1]],
+#'   diffnet.toa(medInnovationsDiffNet),
+#'   x = coords[,1], y = coords[,2],
+#'   vertex_cex = vcex,
+#'   dev = par("pin")
+#'   )
+#'
+#' ecoords <- as.data.frame(ecoords)
+#'
+#' # Plotting
+#' symbols(coords[,1], coords[,2], circles=vcex,
+#'   inches=FALSE, xaxs="i", yaxs="i")
+#'
+#' with(ecoords, arrows(x0,y0,x1,y1, length=.1))
 #' @export
-edges_coords <- function(graph, toa, x, y, vertex_cex, undirected = TRUE, no_contemporary = TRUE) {
-    .Call('netdiffuseR_edges_coords', PACKAGE = 'netdiffuseR', graph, toa, x, y, vertex_cex, undirected, no_contemporary)
+edges_coords <- function(graph, toa, x, y, vertex_cex, undirected = TRUE, no_contemporary = TRUE, dev = as.numeric( c()), ran = as.numeric( c())) {
+    .Call('netdiffuseR_edges_coords', PACKAGE = 'netdiffuseR', graph, toa, x, y, vertex_cex, undirected, no_contemporary, dev, ran)
+}
+
+edges_arrow <- function(x0, y0, x1, y1, height, width, beta = 1.5707963267949, dev = as.numeric( c()), ran = as.numeric( c())) {
+    .Call('netdiffuseR_edges_arrow', PACKAGE = 'netdiffuseR', x0, y0, x1, y1, height, width, beta, dev, ran)
+}
+
+vertices_coords <- function(x, y, size, nsides, rot, dev = as.numeric( c()), ran = as.numeric( c())) {
+    .Call('netdiffuseR_vertices_coords', PACKAGE = 'netdiffuseR', x, y, size, nsides, rot, dev, ran)
+}
+
+rewire_swap <- function(graph, nsteps = 100L, self = FALSE, multiple = FALSE, undirected = FALSE) {
+    .Call('netdiffuseR_rewire_swap', PACKAGE = 'netdiffuseR', graph, nsteps, self, multiple, undirected)
 }
 
 rgraph_ba_cpp <- function(graph, dgr, m = 1L, t = 10L) {
@@ -156,20 +224,26 @@ rgraph_er_dyn_cpp <- function(n = 10L, t = 3L, p = 0.3, undirected = TRUE, weigh
 #' Creates a ring lattice with \eqn{n} vertices, each one of degree (at most) \eqn{k}
 #' as an undirected graph. This is the basis of \code{\link{rgraph_ws}}.
 #' @param n Integer scalar. Size of the graph.
-#' @param k Integer scalar. Degree of each vertex.
-#' @details Since the created graph is undirected, the degree of each node always
+#' @param k Integer scalar. Out-degree of each vertex.
+#' @param undirected Logical scalar. Whether the graph is undirected or not.
+#' @details when \code{undirected=TRUE}, the degree of each node always
 #' even. So if \code{k=3}, then the degree will be \code{2}.
 #' @return A sparse matrix of class \code{\link[Matrix:dgCMatrix-class]{dgCMatrix}} of size
 #' \eqn{n\times n}{n * n}.
 #' @references Watts, D. J., & Strogatz, S. H. (1998). Collective dynamics of
 #' “small-world” networks. Nature, 393(6684), 440–2. \url{http://doi.org/10.1038/30918}
 #' @export
-ring_lattice <- function(n, k) {
-    .Call('netdiffuseR_ring_lattice', PACKAGE = 'netdiffuseR', n, k)
+#' @family simulation functions
+ring_lattice <- function(n, k, undirected = FALSE) {
+    .Call('netdiffuseR_ring_lattice', PACKAGE = 'netdiffuseR', n, k, undirected)
 }
 
-rewire_graph_cpp <- function(graph, p, both_ends = FALSE, self = FALSE, multiple = FALSE, undirected = FALSE) {
-    .Call('netdiffuseR_rewire_graph_cpp', PACKAGE = 'netdiffuseR', graph, p, both_ends, self, multiple, undirected)
+rewire_endpoints <- function(graph, p, both_ends = FALSE, self = FALSE, multiple = FALSE, undirected = FALSE) {
+    .Call('netdiffuseR_rewire_endpoints', PACKAGE = 'netdiffuseR', graph, p, both_ends, self, multiple, undirected)
+}
+
+rewire_ws <- function(G, K, p = 0.0, self = FALSE, multiple = FALSE) {
+    .Call('netdiffuseR_rewire_ws', PACKAGE = 'netdiffuseR', G, K, p, self, multiple)
 }
 
 select_egoalter_cpp <- function(adjmat_t0, adjmat_t1, adopt_t0, adopt_t1) {
@@ -192,8 +266,8 @@ hazard_rate_cpp <- function(cumadopt) {
     .Call('netdiffuseR_hazard_rate_cpp', PACKAGE = 'netdiffuseR', cumadopt)
 }
 
-threshold_cpp <- function(exposure, toa) {
-    .Call('netdiffuseR_threshold_cpp', PACKAGE = 'netdiffuseR', exposure, toa)
+threshold_cpp <- function(exposure, toa, include_censored = FALSE) {
+    .Call('netdiffuseR_threshold_cpp', PACKAGE = 'netdiffuseR', exposure, toa, include_censored)
 }
 
 struct_equiv_cpp <- function(graph, v = 1.0, unscaled = FALSE, inv = FALSE, invrep = 0.0) {

@@ -12,6 +12,7 @@
 
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+#include "netdiffuser_extra.h"
 
 using namespace Rcpp;
 
@@ -127,68 +128,22 @@ arma::sp_mat edgelist_to_adjmat_cpp(
 
 
 // [[Rcpp::export]]
-arma::mat adjmat_to_edgelist_cpp(const arma::sp_mat & adjmat, bool undirected = true) {
-  std::vector< double > ego;
-  std::vector< double > alter;
+arma::mat adjmat_to_edgelist_cpp(
+    const arma::sp_mat & adjmat,
+    bool undirected = true) {
 
-  int n = adjmat.n_cols;
+  arma::umat coords = sparse_indexes(adjmat);
+  int m = coords.n_rows;
+  arma::mat edgelist(m, 3);
 
-  // CAN BE REWRITTEN ACCESSING VALUES OF THE SPMAT DIRECTLY
-
-  for(int i=0;i<n;i++) {
-    /* Setting the length of the subloop acordingly to type of graph */
-    int m = n;
-    if (undirected) m=i;
-    for(int j=0;j<m;j++) {
-      if (adjmat(i,j))
-        ego.push_back(i+1.0), alter.push_back(j+1.0);
-    }
+  for (int i=0;i<m;i++) {
+    edgelist.at(i,0) = coords.at(i, 0) + 1;
+    edgelist.at(i,1) = coords.at(i, 1) + 1;
+    edgelist.at(i,2) = adjmat.at(coords.at(i,0), coords.at(i,1));
   }
-
-  // Creating colvectors to be used with join_rows.
-  arma::mat egom(ego);
-  arma::mat alterm(alter);
-
-  arma::mat edgelist = join_rows(egom, alterm);
 
   return edgelist;
 }
-
-
-// // [[Rcpp::export]]
-// arma::mat adjmat_to_dyn_edgelist_cpp(NumericVector adjmat, bool undirected=true) {
-//
-//   // Coersing a NumericVector into a cube for ease of use
-//   IntegerVector dims=adjmat.attr("dim");
-//   const arma::cube adjmat_cube(adjmat.begin(), dims[0], dims[1], dims[2], false);
-//
-//   int T = adjmat_cube.n_slices;
-//   int n = adjmat_cube.n_cols;
-//
-//   std::vector< double > ego;
-//   std::vector< double > alter;
-//   std::vector< double > time;
-//
-//   for(int t=0;t<T;t++)
-//     for(int i=0;i<n;i++) {
-//       /* Setting the length of the subloop acordingly to type of graph */
-//       int m = n;
-//       if (undirected) m=i;
-//       for(int j=0;j<m;j++)
-//         if (adjmat_cube(i,j,t))
-//           ego.push_back(i+1.0), alter.push_back(j+1.0), time.push_back(t+1.0);
-//     }
-//
-//   // Creating colvectors to be used with join_rows.
-//   arma::mat egom(ego);
-//   arma::mat alterm(alter);
-//   arma::mat timem(time);
-//
-//   arma::mat edgelist = join_rows(join_rows(egom, alterm), timem);
-//
-//   return edgelist;
-// }
-
 
 // [[Rcpp::export]]
 IntegerMatrix toa_diff_cpp(const IntegerVector & year) {
@@ -249,27 +204,25 @@ arma::sp_mat drop_isolated_cpp(
     const arma::sp_mat & adjmat,
     arma::icolvec isolated, bool undirected=true) {
 
-  int n = adjmat.n_cols;
-
   // Checking size
   is_square_sp_mat(adjmat);
 
-  if (isolated.n_rows==0) isolated = isolated_cpp(adjmat, undirected);
-  else if (isolated.n_rows != n) stop("-isolated- must have the same length as nrow(adjmat)");
+  if (isolated.n_rows==0u) isolated = isolated_cpp(adjmat, undirected);
+  else if (isolated.n_rows != adjmat.n_cols) stop("-isolated- must have the same length as nrow(adjmat)");
 
   int m = sum(isolated);
-  arma::sp_mat newadjmat(n-m,n-m);
+  arma::sp_mat newadjmat(adjmat.n_cols-m,adjmat.n_cols-m);
 
   // Rcpp::warning()
 
   // Indexes of the new adjacency matrix
   int ii=0;
   int ji=0;
-  for(int i=0;i<n;i++) {
+  for(unsigned i=0;i<adjmat.n_cols;i++) {
 
     // If an isolated was found, continue next
     if (isolated[i]) continue;
-    for(int j=0;j<n;j++) {
+    for(unsigned j=0;j<adjmat.n_cols;j++) {
       if (isolated[j]) continue;
       newadjmat.at(ii,ji++)=adjmat.at(i,j);
     }

@@ -4,8 +4,10 @@
 \alias{exposure}
 \title{Ego exposure}
 \usage{
-exposure(graph, cumadopt, attrs = NULL, alt.graph = NULL, outgoing = TRUE,
-  valued = getOption("diffnet.valued"), normalized = TRUE)
+exposure(graph, cumadopt, attrs = NULL, alt.graph = NULL,
+  outgoing = getOption("diffnet.outgoing", TRUE),
+  valued = getOption("diffnet.valued", FALSE), normalized = TRUE,
+  groupvar = NULL, ...)
 }
 \arguments{
 \item{graph}{A dynamic graph (see \code{\link{netdiffuseR-graphs}}).}
@@ -13,16 +15,23 @@ exposure(graph, cumadopt, attrs = NULL, alt.graph = NULL, outgoing = TRUE,
 \item{cumadopt}{nxT matrix. Cumulative adoption matrix obtained from
 \code{\link{toa_mat}}}
 
-\item{attrs}{A numeric matrix of size \eqn{n\times T}{n * T}. Weighting for each time, period (see details).}
+\item{attrs}{Either a character scalar (if \code{graph} is diffnet),
+or a numeric matrix of size \eqn{n\times T}{n * T}. Weighting for each time, period (see details).}
 
-\item{alt.graph}{A dynamic graph that should be used instead of \code{graph} (see details).}
+\item{alt.graph}{Either a dynamic graph that should be used instead of \code{graph},
+or \code{"se"} (see details).}
 
-\item{outgoing}{Logical scalar. When TRUE, computed using outgoing ties.}
+\item{outgoing}{Logical scalar. When \code{TRUE}, computed using outgoing ties.}
 
-\item{valued}{Logical scalar. When FALSE, values of \code{graph} are set to one.}
+\item{valued}{Logical scalar. When \code{FALSE}, values of \code{graph} are set to one.}
 
-\item{normalized}{Logical scalar. When true, the exposure will be between zero
+\item{normalized}{Logical scalar. When \code{TRUE}, the exposure will be between zero
 and one (see details).}
+
+\item{groupvar}{Passed to \code{\link{struct_equiv}}.}
+
+\item{...}{Further arguments passed to \code{\link{struct_equiv}} (only used when
+\code{alt.graph="se"}).}
 }
 \value{
 A matrix of size \eqn{n\times T}{n * T} with exposure for each node.
@@ -51,17 +60,41 @@ if \eqn{i} has adopted at or prior to \eqn{t}), \eqn{\circ}{*} is the kronecker
 product (element-wise), and \eqn{\times}{\%*\%} is the matrix product.
 
 By default the graph used for this calculation, \eqn{S}, is the social network. Alternatively,
-in the case of \code{diffnet} objects, the user can provide an alaternative
+in the case of \code{diffnet} objects, the user can provide an alternative
 graph using \code{alt.graph}. An example of this would be using \eqn{1/SE},
 the element-wise inverse of the structural equivalence matrix (see example below).
+Furthermore, if \code{alt.graph="se"}, the inverse of the structural equivalence
+is computed via \code{\link{struct_equiv}} and used instead of the provided
+graph. Notice that when using a valued graph the option \code{valued} should
+be equal to \code{TRUE}, this check is run automatically when running the
+model using structural equivalence.
+
+\bold{An important remark} is that when calculating \bold{structural equivalence} the
+function \bold{assumes that this is to be done to the entire graph} regardless of
+disconnected communities (as in the case of the medical innovations
+data set). Hence, structural equivalence for individuals for two different
+communites may not be zero. If the user wants to calculate structural
+equivalence separately by community, he should create different diffnet
+objects and do so (see example below). Alternatively, for the case of
+diffnet objects, by using the option \code{groupvar} (see \code{\link{struct_equiv}}), the user can provide
+the function with the name of a grouping variable--which should one in the
+set of static vertex attributes--so that the algorithm is done by group
+(or community) instead of in an aggregated way.
 
 If the user does not specifies a particular weighting attribute in \code{attrs},
 the function sets this as a matrix of ones. Otherwise the function will return
-an attribute weighted exposure. See the examples section for a demonstration using
+an attribute weighted exposure. When \code{graph} is of class \code{diffnet},
+\code{attrs} can be a character scalar specifying the name of any of the graph's
+attributes, both dynamic and static. See the examples section for a demonstration using
 degree.
 
 When \code{outgoing=FALSE}, \eqn{S} is replaced by its transposed, so in the
 case of a social network exposure will be computed based on the incomming ties.
+
+If \code{normalize=FALSE} then denominator, \eqn{S_t \times x_t}{S(t) \%*\% x(t)},
+is not included. This can be useful when, for example, exposure needs to be
+computed as a count instead of a proportion. A good example of this can be
+found at the examples section of the function \code{\link{rdiffnet}}.
 }
 \examples{
 # Calculating the exposure based on Structural Equivalence ------------------
@@ -69,22 +102,104 @@ set.seed(113132)
 graph <- rdiffnet(100, 10)
 
 SE <- lapply(struct_equiv(graph), "[[", "SE")
-SE <- lapply(SE, function(x) 1/(x + 1e-15))
-eSE <- exposure(graph, alt.graph=SE)
-eNO <- exposure(graph)
-any(eSE != eNO) # Different outputs
+SE <- lapply(SE, function(x) {
+   x <- 1/x
+   x[!is.finite(x)] <- 0
+   x
+})
+
+# Recall setting valued equal to TRUE!
+expo_se <- exposure(graph, alt.graph=SE , valued=TRUE)
+
+# These three lines are equivalent to:
+expo_se2 <- exposure(graph, alt.graph="se", valued=TRUE)
+# Notice that we are setting valued=TRUE, but this is not necesary since when
+# alt.graph = "se" the function checks this to be setted equal to TRUE
 
 # Weighted Exposure using degree --------------------------------------------
 eDE <- exposure(graph, attrs=dgr(graph))
-any(eNO != eDE) # Different outputs
+
+# Which is equivalent to
+graph[["deg"]] <- dgr(graph)
+eDE2 <- exposure(graph, attrs="deg")
 
 # Comparing using incomming edges -------------------------------------------
 eIN <- exposure(graph, outgoing=FALSE)
-any(eIN != eNO) # Different outputs
+
+# Structral equivalence for different communities ---------------------------
+data(medInnovationsDiffNet)
+
+# METHOD 1: Using the c.diffnet method:
+
+# Creating subsets by city
+cities <- unique(medInnovationsDiffNet[["city"]])
+
+diffnet <- medInnovationsDiffNet[medInnovationsDiffNet[["city"]] == cities[1]]
+diffnet[["expo_se"]] <- exposure(diffnet, alt.graph="se", valued=TRUE)
+
+for (v in cities[-1]) {
+   diffnet_v <- medInnovationsDiffNet[medInnovationsDiffNet[["city"]] == v]
+   diffnet_v[["expo_se"]] <- exposure(diffnet_v, alt.graph="se", valued=TRUE)
+   diffnet <- c(diffnet, diffnet_v)
+}
+
+# We can set the original order (just in case) of the data
+diffnet <- diffnet[medInnovationsDiffNet$meta$ids]
+diffnet
+
+# Checking everything is equal
+test <- summary(medInnovationsDiffNet, no.print=TRUE) ==
+   summary(diffnet, no.print=TRUE)
+
+stopifnot(all(test))
+
+# METHOD 2: Using the 'groupvar' argument
+# Further, we can compare this with using the groupvar
+diffnet[["expo_se2"]] <- exposure(diffnet, alt.graph="se",
+   groupvar="city", valued=TRUE)
+
+# These should be equivalent
+test <- diffnet[["expo_se", as.df=TRUE]] == diffnet[["expo_se2", as.df=TRUE]]
+stopifnot(all(test))
+
+# METHOD 3: Computing exposure, rbind and then adding it to the diffnet object
+expo_se3 <- NULL
+for (v in unique(cities))
+   expo_se3 <- rbind(
+     expo_se3,
+     exposure(
+       diffnet[diffnet[["city"]] == v],
+       alt.graph = "se", valued=TRUE
+     ))
+
+# Just to make sure, we sort the rows
+expo_se3 <- expo_se3[diffnet$meta$ids,]
+
+diffnet[["expo_se3"]] <- expo_se3
+
+test <- diffnet[["expo_se", as.df=TRUE]] == diffnet[["expo_se3", as.df=TRUE]]
+stopifnot(all(test))
+
+
+# METHOD 4: Using the groupvar in struct_equiv
+se <- struct_equiv(diffnet, groupvar="city")
+se <- lapply(se, "[[", "SE")
+se <- lapply(se, function(x) {
+   x <- 1/x
+   x[!is.finite(x)] <- 0
+   x
+})
+
+diffnet[["expo_se4"]] <- exposure(diffnet, alt.graph=se, valued=TRUE)
+
+test <- diffnet[["expo_se", as.df=TRUE]] == diffnet[["expo_se4", as.df=TRUE]]
+stopifnot(all(test))
+
+
 
 }
 \author{
-Vega Yon, Dyal, Hayes & Valente
+George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 }
 \references{
 Burt, R. S. (1987). "Social Contagion and Innovation: Cohesion versus Structural

@@ -35,7 +35,7 @@
 #' and \code{\link{names}} (in the case of dynamic graphs as lists). Otherwise,
 #' when no names are provided, these will be created from scratch.
 #' @include imports.R
-#' @author Vega Yon
+#' @author George G. Vega Yon
 NULL
 
 stopifnot_graph <- function(x)
@@ -58,7 +58,7 @@ stopifnot_graph <- function(x)
 #' \item{nper}{Integer scalar. Number of time periods}
 #' \item{n}{Integer scalar. Number of vertices in the graph}
 #' Otherwise returns with error.
-#' @author Vega Yon
+#' @author George G. Vega Yon
 #' @export
 classify_graph <- function(graph) {
 
@@ -179,7 +179,7 @@ classify_graph <- function(graph) {
     ids <- rownames(graph)
     if (!length(ids)) ids <- 1:d[1]
 
-    pers <- dimnames(graph)[[3]]
+    pers <- as.numeric(dimnames(graph)[[3]])
     if (!length(pers)) pers <- 1:d[3]
     else {
       # Step 4.2.1: Must be coercible into integer
@@ -187,8 +187,9 @@ classify_graph <- function(graph) {
       if (any(is.na(alters))) stop("names(graph) should be either numeric or integer.")
 
       # Step 4.2.1: Must keep uniqueness
-      if (unique(alters) != length(pers)) stop("When coercing names(graph) into integer,",
-                                       "some slices acquired the same name.")
+      if (length(unique(alters)) != length(pers))
+        stop("When coercing names(graph) into integer,",
+             "some slices acquired the same name.")
       pers <- alters
     }
 

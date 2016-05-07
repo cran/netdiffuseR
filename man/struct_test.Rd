@@ -6,16 +6,17 @@
 \alias{struct_test}
 \title{Structure dependence test}
 \usage{
-struct_test(graph, statistic, R, rewire.args = list(p = 1, undirected =
-  getOption("diffnet.undirected"), both.ends = TRUE), ...)
+struct_test(graph, statistic, R, rewire.args = list(p = c(2000, rep(100,
+  nslices(graph) - 1)), undirected = getOption("diffnet.undirected", FALSE),
+  copy.first = TRUE, algorithm = "swap"), ...)
 
 \method{print}{diffnet_struct_test}(x, ...)
 
 \method{hist}{diffnet_struct_test}(x,
-  main = "Distribution of Statistic on\\nrewired network",
-  xlab = expression(Values ~ of ~ t), breaks = 20, annotated = TRUE,
-  b0 = expression(atop(plain("") \%up\% plain("")), t[0]),
-  b = expression(atop(plain("") \%up\% plain("")), t[]), ...)
+  main = "Empirical Distribution of Statistic", xlab = expression(Values ~
+  of ~ t), breaks = 20, annotated = TRUE, b0 = expression(atop(plain("")
+  \%up\% plain("")), t[0]), b = expression(atop(plain("") \%up\% plain("")),
+  t[]), ...)
 }
 \arguments{
 \item{graph}{A \code{\link{diffnet}} graph.}
@@ -45,6 +46,10 @@ struct_test(graph, statistic, R, rewire.args = list(p = 1, undirected =
 \value{
 A list of class \code{diffnet_bot} containing the following:
 \item{graph}{The graph passed to \code{struct_test}.}
+\item{p.value}{The resulting p-value of the test (see details).}
+\item{t0}{The observed value of the statistic.}
+\item{mean_t}{The average value of the statistic applied to the simulated networks.}
+\item{R}{Number of simulations.}
 \item{statistic}{The function \code{statistic} passed to \code{struct_test}.}
 \item{boot}{A \code{boot} class object as return from the call to \code{boot}.}
 
@@ -60,7 +65,9 @@ against the empirical distribution of it obtained from rewiring the network.
 \code{struct_test} is a wrapper for the function \code{\link[boot:boot]{boot}} from the
 \pkg{boot} package. Instead of resampling data--vertices or edges--in each iteration the function
 rewires the original graph using \code{\link{rewire_graph}} and applies
-the function defined by the user in \code{statistic}.
+the function defined by the user in \code{statistic}. In particular, the \code{"swap"} algorithm
+is used in order to preserve the degree sequence of the graph, in other words,
+each rewired version of the original graph has the same degree sequence.
 
 In \code{struct_test} \code{\dots} are passed to \code{boot}, otherwise are passed
 to the corresponding method (\code{\link{hist}} for instance).
@@ -83,7 +90,7 @@ working paper can be distributed upon request to \email{g.vegayon@gmail.com}
 \examples{
 # Creating a random graph
 set.seed(881)
-diffnet <- rdiffnet(100, 10)
+diffnet <- rdiffnet(500, 10, seed.graph="small-world")
 
 # Testing structure-dependency of threshold
 res <- struct_test(diffnet, function(g) mean(threshold(g), na.rm=TRUE), R=100)
@@ -107,7 +114,7 @@ hist(res)
 }
 }
 \author{
-Vega Yon
+George G. Vega Yon
 }
 \references{
 Vega Yon, George G. and Valente, Thomas W. (On development).

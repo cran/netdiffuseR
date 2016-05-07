@@ -842,5 +842,91 @@
 #' Analysis in the Social Sciences (pp. 98–116). New York: Cambridge University Press.
 #' @family diffusion datasets
 #' @name diffusion-data
-#' @author Valente, T.W.
+#' @author Thomas W. Valente
 NULL
+
+
+#' Fake survey data
+#'
+#' This data frame is used to ilustrate some of the functions of the package,
+#' in particular, the \code{\link{survey_to_diffnet}} function. This dataset
+#' can be merged with the \code{\link{fakeEdgelist}}.
+#'
+#' @format A data frame with 9 rows and 9 variables
+#' \describe{
+#'  \item{id}{Unique id at group level}
+#'  \item{toa}{Time of adoption}
+#'  \item{group}{Group id}
+#'  \item{net1}{Network nomination 1}
+#'  \item{net2}{Network nomination 2}
+#'  \item{net3}{Network nomination 3}
+#'  \item{age}{Age of the respondent}
+#'  \item{gender}{Gende of the respondent}
+#'  \item{note}{Descroption of the respondent}
+#' }
+#'
+#' @source Generated for the package.
+#' @family diffusion datasets
+#' @author George G. Vega Yon
+"fakesurvey"
+
+#' Fake longitudinal survey data
+#'
+#' This data frame is used to ilustrate some of the functions of the package,
+#' in particular, the \code{\link{survey_to_diffnet}} function. This dataset
+#' can be merged with the \code{\link{fakeDynEdgelist}}.
+#'
+#' @format A data frame with 18 rows and 10 variables
+#' \describe{
+#'  \item{id}{Unique id at group level}
+#'  \item{toa}{Time of adoption}
+#'  \item{group}{Group id}
+#'  \item{net1}{Network nomination 1}
+#'  \item{net2}{Network nomination 2}
+#'  \item{net3}{Network nomination 3}
+#'  \item{age}{Age of the respondent}
+#'  \item{gender}{Gende of the respondent}
+#'  \item{note}{Descroption of the respondent}
+#'  \item{time}{Timing of the wave}
+#' }
+#'
+#' @source Generated for the package.
+#' @family diffusion datasets
+#' @author George G. Vega Yon
+"fakesurveyDyn"
+
+
+#' Fake dynamic edgelist
+#'
+#' A data frame used for examples in reading edgelist format networks. This
+#' edgelist can be merged with the dataset \code{\link{fakesurveyDyn}}.
+#'
+#' @format A data frame with 22 rows and 4 variables
+#' \describe{
+#'  \item{ego}{Nominating individual}
+#'  \item{alter}{Nominated individual}
+#'  \item{value}{Strength of the tie}
+#'  \item{time}{Integer with the time of the spell}
+#' }
+#'
+#' @source Generated for the package
+#' @family diffusion datasets
+#' @author George G. Vega Yon
+"fakeDynEdgelist"
+
+#' Fake static edgelist
+#'
+#' A data frame used for examples in reading edgelist format networks. This
+#' edgelist can be merged with the dataset \code{\link{fakesurvey}}.
+#'
+#' @format A data frame with 11 rows and 3 variables
+#' \describe{
+#'  \item{ego}{Nominating individual}
+#'  \item{alter}{Nominated individual}
+#'  \item{value}{Strength of the tie}
+#' }
+#'
+#' @source Generated for the package
+#' @family diffusion datasets
+#' @author George G. Vega Yon
+"fakeEdgelist"

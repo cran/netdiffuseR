@@ -1,72 +1,50 @@
-// [[Rcpp::depends(RcppArmadillo)]]
+ // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+#include "netdiffuser_extra.h"
 using namespace Rcpp;
-
-arma::umat sparse_indexes(const arma::sp_mat & mat) {
-
-  int n = mat.n_nonzero;
-  arma::umat indices(n,2);
-  int curcol = (int) mat.col_ptrs[0]/mat.n_rows;
-
-  // If the matrix is empty (which makes no sense)
-  if (n == curcol) return indices;
-
-  int j = 0;
-  int cumrow = 0;
-  for (int i=0;i<n;i++) {
-    // Figuring out what column
-    if (cumrow >= mat.col_ptrs[j+1]) curcol = mat.col_ptrs[++j];
-
-    // Asigning indexes
-    indices.at(i,0) = mat.row_indices[i];
-    indices.at(i,1) = j;
-    ++cumrow;
-  }
-  // return indices;
-  return indices;
-}
-
 
 //' Ring lattice graph
 //'
 //' Creates a ring lattice with \eqn{n} vertices, each one of degree (at most) \eqn{k}
 //' as an undirected graph. This is the basis of \code{\link{rgraph_ws}}.
 //' @param n Integer scalar. Size of the graph.
-//' @param k Integer scalar. Degree of each vertex.
-//' @details Since the created graph is undirected, the degree of each node always
+//' @param k Integer scalar. Out-degree of each vertex.
+//' @param undirected Logical scalar. Whether the graph is undirected or not.
+//' @details when \code{undirected=TRUE}, the degree of each node always
 //' even. So if \code{k=3}, then the degree will be \code{2}.
 //' @return A sparse matrix of class \code{\link[Matrix:dgCMatrix-class]{dgCMatrix}} of size
 //' \eqn{n\times n}{n * n}.
 //' @references Watts, D. J., & Strogatz, S. H. (1998). Collective dynamics of
 //' “small-world” networks. Nature, 393(6684), 440–2. \url{http://doi.org/10.1038/30918}
 //' @export
+//' @family simulation functions
 // [[Rcpp::export]]
-arma::sp_mat ring_lattice(int n, int k) {
+arma::sp_mat ring_lattice(int n, int k, bool undirected=false) {
 
   if ((n-1) < k)
     stop("k can be at most n - 1");
 
   arma::sp_mat graph(n,n);
 
-  // Connecting to k next & previous neighbour
+  // Adjusting k
+  if (undirected)
+    if (k>1) k = (int) floor((double) k/2.0);
+
+  // Connecting to k/2 next & previous neighbour
   for (int i=0;i<n;i++) {
-    for (int j=1;j<=k/2;j++) {
+    for (int j=1;j<=k;j++) {
       // Next neighbor
       int l = i+j;
       if (l >= n) l = l - n;
-      graph.at(i,l) += 1.0;
 
-      // Previous neighbor
-      l = i-j;
-      if (l < 0) l = l + n;
       graph.at(i,l) += 1.0;
-      // graph.aAbstract Submission is now closed. Thank you!t(l,i) += 1.0;
+      if (undirected) graph.at(l,i) += 1.0;
     }
   }
   return graph;
 }
 
-/***R
+/** *R
 library(Matrix)
 library(sna)
 x <- ring_lattice(6,2)
@@ -83,71 +61,59 @@ gplot(as.matrix(x), displaylabels = TRUE, mode="circle", jitter = FALSE)
 */
 
 // [[Rcpp::export]]
-arma::sp_mat rewire_graph_cpp(
+arma::sp_mat rewire_endpoints(
     const arma::sp_mat & graph, double p,
     bool both_ends=false,
     bool self=false, bool multiple=false,
     bool undirected=false) {
 
   // Clonning graph
-  arma::sp_mat newgraph(graph);
   int n = graph.n_cols;
+  arma::sp_mat newgraph(graph);
 
   // Getting the indexes
   arma::umat indexes = sparse_indexes(graph);
 
-  for (int i= 0;i<indexes.n_rows; i++) {
+  for (unsigned i= 0;i<indexes.n_rows; i++) {
 
     // Checking user interrupt
     if (i % 1000 == 0)
       Rcpp::checkUserInterrupt();
 
+    // Checking whether to change it or not
     if (unif_rand() > p) continue;
 
     // Indexes
     int j = indexes.at(i, 0);
     int k = indexes.at(i, 1);
 
-    // Since it is undirected...
-    if (undirected && (j > k) ) continue;
+    // In the case of undirected graphs, we only modify the lower triangle
+    // The upper triangle part will be rewritten during the rand.
+    if (undirected && (j < k)) continue;
 
     // New end(s)
     int newk, newj;
 
     // If rewiring is in both sides, then we start from the left
-    if (both_ends) newj = floor( (n-1)*unif_rand() );
-    else newj = j;
+    if (both_ends) newj = (int) floor( unif_rand()*n );
+    else           newj = j;
 
-    // Checking for conditions
-    int wcount = 0;
-    bool conditions = true;
-    arma::uvec picked(n, arma::fill::zeros);
+    if (undirected) newk = (int) floor( unif_rand()*(newj + 1));
+    else            newk = (int) floor( unif_rand()*n);
 
-    while (conditions) {
-      newk = floor( (n-1)*unif_rand() );
+    // Self edges are not allowed, again, must check this on the new graph
+    if (!self && (newj == newk)) continue;
 
-      // In the case that the individual actually is connected to everyone and
-      // multiple is not allowed, this is needed to break out the loop
-      if (picked.at(newk)) {
-        if (++wcount >= n*2) break;
-        continue;
-      } else picked.at(newk) = 1;
-
-      if (undirected && newj > newk) continue;
-
-      if (!self && newj == newk) continue;
-      if (!multiple && (graph.at(newj, newk) != 0)) continue;
-
-      conditions = false;
-    }
-
-    // Setting zeros
-    double w = newgraph.at(j,k);
-    newgraph.at(j,k) = 0;
-    if (undirected) newgraph.at(k,j) = 0;
+    // Multiple edges are not allowed. Must check this on the new graph
+    if (!multiple && (newgraph.at(newj, newk) != 0)) continue;
 
     // Adding up
-    newgraph.at(newj,newk) += w;
+    double w = graph.at(j,k);
+
+                    newgraph.at(j,k) = 0;
+    if (undirected) newgraph.at(k,j) = 0;
+
+                    newgraph.at(newj,newk) += w;
     if (undirected) newgraph.at(newk,newj) += w;
 
   }
@@ -155,14 +121,85 @@ arma::sp_mat rewire_graph_cpp(
 }
 
 
-/***R
+// [[Rcpp::export]]
+arma::sp_mat rewire_ws(arma::sp_mat G, int K, double p=0.0,
+                       bool self=false, bool multiple=false) {
+
+  arma::sp_mat out(G);
+  int n = G.n_rows;
+
+  // First half
+  for(int k=1;k<=K;k++) {
+    for(int i=0;i<n;i++) {
+      // Clock wise choose
+      int j;
+      if (k <= K/2) j = ((i + k) < n)? i + k: k - (n - i);
+      else {
+        int tmpk = k - K/2;
+        j = ((i - tmpk) < 0)? n - tmpk + i: i - tmpk;
+      }
+
+      // If not rewire then leave as is
+      if (unif_rand() > p) continue;
+
+      // Picking the new random obs excluding i
+      int newj;
+      if (!self) newj = unif_rand_w_exclusion(n, i);
+      else       newj = floor(unif_rand()*n);
+
+      // If multiple
+      std::vector< bool > checked(n);
+      int nchecked = 0;
+      while (!multiple && out.at(i,newj) != 0) {
+        // Picking a new one
+        if (!self) newj = unif_rand_w_exclusion(n, i);
+        else       newj = floor(unif_rand()*n);
+
+        // Has it already been drawn?
+        if (!checked.at(newj)) {
+          checked.at(newj) = true;
+          ++nchecked;
+
+        } else {
+          if      ( self && (nchecked >= n))       break;
+          else if (!self && (nchecked >= (n - 1))) break;
+        }
+      }
+
+      // If multiple, then continue
+      if (multiple && out.at(i, newj) != 0) continue;
+
+
+      // Changing values
+      double v = G.at(i, j);
+      out.at(i,j) = 0;
+      out.at(i, newj) = v;
+
+
+    }
+  }
+  // // Second half
+  // for(int k=1;k<=K/2;k++) {
+  //   for(int i=0;i<G.n_cols;i++) {
+  //     // Clockwise choose
+  //     int j = ((i - k) < 0)? G.n_cols - k + i: i - k;
+  //     // // Rprintf("(%d, %d)\n", i, j);
+  //     // out.at(i,j) = 1;
+  //   }
+  // }
+
+  return out;
+}
+
+
+/** *R
 rgraph_ws <- function(n,k,p, both_ends=FALSE, self=FALSE, multiple=FALSE) {
-  rewire_graph_cpp(ring_lattice(n, k), p, both_ends,
+ rewire_endpoints(ring_lattice(n, k), p, both_ends,
                    self, multiple, true)
 }
 
-x <- ring_lattice(10, 2)
+x <- ring_lattice(14, 2)
 gplot(as.matrix(x), mode="circle", jitter=FALSE, usecurve = TRUE, gmode = "graph")
-gplot(as.matrix(rewire_graph_cpp(x, .1)), mode="circle", jitter=FALSE, usecurve = TRUE, gmode = "graph")
-gplot(as.matrix(rewire_graph_cpp(x, 1)), mode="circle", jitter=FALSE, usecurve = TRUE, gmode = "graph")
+gplot(as.matrix(netdiffuseR:::rewire_endpoints(x, .1)), mode="circle", jitter=FALSE, usecurve = TRUE, gmode = "graph")
+gplot(as.matrix(netdiffuseR:::rewire_endpoints(x, 1)), mode="circle", jitter=FALSE, usecurve = TRUE, gmode = "graph")
 */

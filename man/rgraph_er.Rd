@@ -66,7 +66,7 @@ rgraph_er(t=5)
 }
 }
 \author{
-Vega Yon
+George G. Vega Yon
 }
 \references{
 Barabasi, Albert-Laszlo. "Network science book" Retrieved November 1 (2015)
@@ -75,7 +75,7 @@ Barabasi, Albert-Laszlo. "Network science book" Retrieved November 1 (2015)
 \seealso{
 Other simulation functions: \code{\link{rdiffnet}},
   \code{\link{rewire_graph}}, \code{\link{rgraph_ba}},
-  \code{\link{rgraph_ws}}
+  \code{\link{rgraph_ws}}, \code{\link{ring_lattice}}
 }
 \concept{
 Bernoulli Random graph

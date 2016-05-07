@@ -2,7 +2,7 @@ context("Exposure")
 
 test_that("exposure calculations", {
   # Generating data
-  set.seed(9999)
+  set.seed(999)
   diffnet <- rdiffnet(40,5, seed.p.adopt = .1)
 
   # Default
@@ -21,7 +21,7 @@ test_that("exposure calculations", {
   exp_1_manual <- as.matrix(do.call(cbind,lapply(diffnet$meta$pers, function(x) {
     s <- struct_equiv(diffnet$graph[[x]])$SE^(-1)
     s[!is.finite(s)] <- 0
-    ( s %*% diffnet$cumadopt[,x,drop=FALSE])/(1e-15+Matrix::rowSums(s))
+    ( s %*% diffnet$cumadopt[,x,drop=FALSE])/(1e-15+base::rowSums(s))
   })))
 
   # expect_equivalent(exp_1_diffnet, exp_1_manual)
