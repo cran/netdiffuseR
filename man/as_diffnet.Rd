@@ -8,10 +8,15 @@
 \alias{diffnet.attrs<-}
 \alias{diffnet.toa}
 \alias{diffnet.toa<-}
+\alias{diffnetLapply}
+\alias{dim.diffnet}
+\alias{dimnames.diffnet}
 \alias{nodes}
 \alias{plot.diffnet}
 \alias{print.diffnet}
+\alias{str.diffnet}
 \alias{summary.diffnet}
+\alias{t.diffnet}
 \title{Creates a \code{diffnet} class object}
 \usage{
 as_diffnet(graph, toa, t0 = min(toa, na.rm = TRUE), t1 = max(toa, na.rm =
@@ -43,6 +48,16 @@ diffnet.toa(graph, i) <- value
   mode = "out", ...)
 
 nodes(graph)
+
+diffnetLapply(graph, FUN, ...)
+
+\method{str}{diffnet}(object, ...)
+
+\method{dimnames}{diffnet}(x)
+
+\method{t}{diffnet}(x)
+
+\method{dim}{diffnet}(x)
 }
 \arguments{
 \item{graph}{A dynamic graph (see \code{\link{netdiffuseR-graphs}}).}
@@ -117,6 +132,8 @@ indexes, character vectors are used jointly with the time period labels.}
 \item{skip.moran}{Logical scalar. When TRUE Moran's I is not reported (see details).}
 
 \item{valued}{Logical scalar. When FALSE non-zero values in the adjmat are set to one.}
+
+\item{FUN}{a function to be passed to lapply}
 }
 \value{
 A list of class \code{diffnet} with the following elements:
@@ -299,6 +316,11 @@ attrs_old <- diffnet.attrs(fs_diffnet, as.df=TRUE)
 tocompare <- intersect(colnames(attrs_new), colnames(attrs_old))
 all(attrs_new[,tocompare] == attrs_old[,tocompare], na.rm = TRUE) # TRUE!
 
+# diffnetLapply -------------------------------------------------------------
+
+data(medInnovationsDiffNet)
+diffnetLapply(medInnovationsDiffNet, function(x, cumadopt, ...) {sum(cumadopt)})
+
 }
 \author{
 George G. Vega Yon
@@ -309,8 +331,8 @@ Default options are listed at \code{\link{netdiffuseR-options}}
 Other data management functions: \code{\link{edgelist_to_adjmat}},
   \code{\link{isolated}}, \code{\link{survey_to_diffnet}}
 
-Other diffnet methods: \code{\link{as.array.diffnet}},
-  \code{\link{c.diffnet}},
+Other diffnet methods: \code{\link{\%*\%}},
+  \code{\link{as.array.diffnet}}, \code{\link{c.diffnet}},
   \code{\link{diffnet-arithmetic}},
   \code{\link{diffnet_index}}
 }

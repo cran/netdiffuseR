@@ -5,7 +5,7 @@
 \title{Retrive threshold levels from the exposure matrix}
 \usage{
 threshold(obj, toa, t0 = min(toa, na.rm = TRUE), include_censored = FALSE,
-  ...)
+  lags = 0L, ...)
 }
 \arguments{
 \item{obj}{Either a \eqn{n\times T}{n * T} matrix (eposure to the innovation obtained from
@@ -15,7 +15,10 @@ threshold(obj, toa, t0 = min(toa, na.rm = TRUE), include_censored = FALSE,
 
 \item{t0}{Integer scalar. See \code{\link{toa_mat}}.}
 
-\item{include_censored}{Logical scalar. When \code{TRUE} (default), threshold
+\item{include_censored}{Logical scalar. When \code{TRUE} (default), threshold}
+
+\item{lags}{Integer scalar. Number of lags to consider when computing thresholds. \code{lags=1}
+ defines threshold as exposure at \eqn{T-1}, where \code{T} is time of adoption.
 levels are not reported for observations adopting in the first time period.}
 
 \item{...}{Further arguments to be passed to \code{\link{exposure}}.}
@@ -57,10 +60,11 @@ George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 \seealso{
 Threshold can be visualized using \code{\link{plot_threshold}}
 
-Other statistics: \code{\link{cumulative_adopt_count}},
-  \code{\link{dgr}}, \code{\link{exposure}},
-  \code{\link{hazard_rate}}, \code{\link{infection}},
-  \code{\link{moran}}, \code{\link{struct_equiv}}
+Other statistics: \code{\link{classify_adopters}},
+  \code{\link{cumulative_adopt_count}}, \code{\link{dgr}},
+  \code{\link{exposure}}, \code{\link{hazard_rate}},
+  \code{\link{infection}}, \code{\link{moran}},
+  \code{\link{struct_equiv}}
 }
 \keyword{univar}
 

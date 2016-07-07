@@ -1,0 +1,47 @@
+2016-07-07  George G. Vega Yon <g.vegayon@gmail.com>
+  * R/diffnet-indexing.R: Adding method for [[.diffnet <- NULL
+  * tests/testthat/*: Adding more tests + small changes to reduce time.
+
+2016-07-06  George G. Vega Yon <g.vegayon@gmail.com>
+  * R/struc_test.R: Changing defaults in n_rewires.
+
+2016-06-26  George G. Vega Yon <g.vegayon@gmail.com>
+  * R/egonets.R: Fixing small bug on the matrix methods
+  * R/diffnet-methods.R: No actual significant changes
+  * R/plot_diffnet2.R: Fixing small bug and improving doc.
+
+2016-06-21  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/misc.R: Changing defaults and adding examples
+	* R/struct_test.R: Adding example with c.diffnet_struct_test
+	* DESCRIPTION: Getting ready for CRAN
+
+2016-06-20  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/struct_test.R: Changes in hist.diffnet_struc_test method.
+	* R/diffnet-methods.R: Extending the %*% method.
+	* R/stats.R: New argument for threshold.
+
+2016-06-17  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/plot_diffnet2.R: Adding new arguments to deal with new function
+	  to rescale the size of vertices.
+	* R/misc.R: Adding new function to rescale vertex size.
+	* R/diffnet-methods.R: Update to plot_diffnet.
+
+2016-06-13  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/diffnet-methods.R: Fixing warnings from R CMD check.
+	* R/imports.R: idem.
+	* R/misc.R: idem.
+	* R/plot_diffnet2.R: idem
+	* R/stats.R: idem.
+	* R/struct_test.R: idem.
+
+2016-06-10  George G. Vega Yon <g.vegayon@gmail.com>
+	* ChangeLog: Sarting ChangeLog
+	* R/adjmat.R: Adding new function `simmelian_mat`
+	* R/diffnet-methods.R: New methods str, dimnames, t, &, |, dim, %*%.
+	* R/egonets.R: Adding new arg.
+	* R/misc.R: New function to create a color key.
+	* R/plot_diffnet2.R: Fixing small bugs and improving doc.
+	* R/rewire.R: Fixing bug.
+	* R/stats.R: New function to classify adopters.
+	* R/struct_test.R: New method c and helper function.
+	* man/*: Adding documentation.

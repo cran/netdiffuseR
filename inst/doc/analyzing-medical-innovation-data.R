@@ -73,20 +73,20 @@ plot_threshold(diffnet_city4, vertex.label = "", main="Threshold and ToA\nin Cit
 par(oldpar)
 
 ## ------------------------------------------------------------------------
-plot_infectsuscep(diffnet_city1, K=5, logscale = TRUE, bins=20)
+plot_infectsuscep(diffnet_city1, K=5, logscale = TRUE, bins=30)
 
 ## ----Stat-test-----------------------------------------------------------
 # Defining the statistic
 avgthr <- function(x) mean(threshold(x), na.rm = TRUE)
 
 # Running the test by city
-test1   <- struct_test(diffnet_city1, avgthr, 2000, ncpus=2, parallel="multicore")
-test2   <- struct_test(diffnet_city2, avgthr, 2000, ncpus=2, parallel="multicore")
-test3   <- struct_test(diffnet_city3, avgthr, 2000)
-test4   <- struct_test(diffnet_city4, avgthr, 2000)
+test1   <- struct_test(diffnet_city1, avgthr, 1000, ncpus=2, parallel="multicore")
+test2   <- struct_test(diffnet_city2, avgthr, 1000, ncpus=2, parallel="multicore")
+test3   <- struct_test(diffnet_city3, avgthr, 1000)
+test4   <- struct_test(diffnet_city4, avgthr, 1000)
 
 # Running the test aggregated
-testall <- struct_test(diffnet, avgthr, 2000, ncpus=2, parallel="multicore")
+testall <- struct_test(diffnet, avgthr, 1000, ncpus=2, parallel="multicore")
 
 # Printing the outcomes
 test1

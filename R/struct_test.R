@@ -23,6 +23,7 @@
 #' \item{R}{Number of simulations.}
 #' \item{statistic}{The function \code{statistic} passed to \code{struct_test}.}
 #' \item{boot}{A \code{boot} class object as return from the call to \code{boot}.}
+#' \item{rewire.args}{The list \code{rewire.args} passed to \code{struct_test}.}
 #'
 #' The output from the \code{hist} method is the same as \code{\link{hist.default}}.
 #' @details
@@ -49,7 +50,10 @@
 #' Empirical Distribution Function retrieved from the simulations.
 #'
 #' The test is actually on development by Vega Yon and Valente. A copy of the
-#' working paper can be distributed upon request to \email{g.vegayon@gmail.com}
+#' working paper can be distributed upon request to \email{g.vegayon@gmail.com}.
+#'
+#' The function \code{n_rewires} proposes a vector of number of rewirings that
+#' are performed in each iteration.
 #' @export
 #' @references
 #' Vega Yon, George G. and Valente, Thomas W. (On development).
@@ -59,7 +63,7 @@
 #' @examples
 #' # Creating a random graph
 #' set.seed(881)
-#' diffnet <- rdiffnet(500, 10, seed.graph="small-world")
+#' diffnet <- rdiffnet(100, 5, seed.graph="small-world")
 #'
 #' # Testing structure-dependency of threshold
 #' res <- struct_test(diffnet, function(g) mean(threshold(g), na.rm=TRUE), R=100)
@@ -74,6 +78,9 @@
 #'  )
 #'  )
 #'
+#' # Concatenating results
+#' c(res, res)
+#'
 #' # Running in parallel fashion
 #' \dontrun{
 #' res <- struct_test(diffnet, function(g) mean(threshold(g), na.rm=TRUE), R=100,
@@ -82,12 +89,25 @@
 #' hist(res)
 #' }
 #' @author George G. Vega Yon
+#' @name struct_test
+NULL
+
+#' @export
+#' @param p Either a Numeric scalar or vector of length \code{nslices(graph)-1}
+#' with the number of rewires per links.
+#' @rdname struct_test
+n_rewires <- function(graph, p=c(100L, rep(.1, nslices(graph) - 1))) {
+  as.integer(round(unlist(nlinks(graph))*p))
+}
+
+
+#' @rdname struct_test
 struct_test <- function(
   graph,
   statistic,
   R,
   rewire.args=list(
-    p          = c(2000, rep(100, nslices(graph) - 1)),
+    p          = n_rewires(graph),
     undirected = getOption("diffnet.undirected", FALSE),
     copy.first = TRUE,
     algorithm  = "swap"
@@ -126,10 +146,32 @@ struct_test <- function(
     mean_t      = colMeans(boot_res$t, na.rm = TRUE),
     R           = R,
     statistic   = statistic,
-    boot        = boot_res
+    boot        = boot_res,
+    rewire.args = rewire.args
   )
 
   return(structure(out, class="diffnet_struct_test"))
+}
+
+#' @export
+#' @param recursive Ignored
+#' @rdname struct_test
+c.diffnet_struct_test <- function(..., recursive=FALSE) {
+  # Checking arguments names
+  args <- list(...)
+  nm <- lapply(args, names)
+  if (!all(sapply(nm, function(x) identical(x, nm[[1]]))))
+    stop("arguments are not all the same type of \"diffnet_struct_test\" object")
+
+  # Checking graph dim
+  res         <- args[[1]]
+  res$boot    <- do.call(c, lapply(args, "[[", "boot"))
+  res$p.value <- with(res, 2*min(mean(boot$t < boot$t0),
+                                 mean(boot$t > boot$t0)))
+  res$mean_t  <- colMeans(res$boot$t, na.rm=TRUE)
+  res$R       <- res$boot$R
+
+  res
 }
 
 #' @export
@@ -165,15 +207,15 @@ hist.diffnet_struct_test <- function(
   b =expression(atop(plain("") %up% plain("")), t[]),
   ...) {
 
-  out <- hist(x$boot$t,  breaks=breaks, plot=FALSE,...)
-
+  out <- hist(x$boot$t,  breaks=breaks, plot=FALSE)
   ran <- range(out$mids)
   if (annotated) {
     mt <- mean(x$boot$t, na.rm=TRUE)
     ran <- range(c(ran, mt, x$boot$t0))
+    hist(x$boot$t, breaks=breaks, main=main, xlab=xlab, xlim = ran, ...)
+  } else {
+    hist(x$boot$t, breaks=breaks, main=main, xlab=xlab, ...)
   }
-
-  plot(out, main=main, xlab=xlab, xlim = ran)
 
   # Adding margin note
   if (annotated) {
@@ -190,3 +232,4 @@ hist.diffnet_struct_test <- function(
 # , nsim)
 #
 # ttest<-(boot_thr$t[1,] - mean(threshold(net), na.rm=TRUE))/boot_thr$t[2,]
+

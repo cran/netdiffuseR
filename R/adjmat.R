@@ -119,7 +119,7 @@
 #'
 #' # Creating a diffnet object with it so we can apply the plot_diffnet function
 #' diffnet <- as_diffnet(graph, toa=1:4)
-#' plot_diffnet(diffnet, displaylabels=TRUE)
+#' plot_diffnet(diffnet, label=rownames(diffnet))
 #' @keywords manip
 #' @family data management functions
 #' @include graph_data.R
@@ -352,13 +352,6 @@ adjmat_to_edgelist.array <- function(graph, undirected, keep.isolates) {
     edgelist <- rbind(edgelist, x)
     times <- c(times, rep(tnames[i],nrow(x)))
   }
-
-  # # Adjusting the length
-  # ids <- apply(edgelist, 1, paste0, collapse="")
-  # times <- as.integer(unname(tapply(times, ids, min)))
-  #
-  # edgelist <- unique(edgelist)
-  # edgelist <- edgelist[order(edgelist[,1],edgelist[,2]),]
 
   return(cbind(edgelist, times=times))
 }
@@ -815,3 +808,12 @@ drop_isolated.list <- function(graph, undirected=getOption("diffnet.undirected")
 
   out
 }
+
+
+simmelian_mat <- function(graph, ...) {
+  tmethod <- if(isS4(graph)) getMethod("t", class(graph)) else t
+  tmp <- graph & tmethod(graph)
+  methods::as(tmp & (tmp %*% tmp), "dgCMatrix")
+}
+
+
