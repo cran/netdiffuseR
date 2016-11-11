@@ -8,14 +8,14 @@
 #' sum of the alters' attributes. These measures may be static or dynamic over
 #' the interval of diffusion and they may be binary or valued.
 #'
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
+#' @templateVar self TRUE
+#' @templateVar valued TRUE
+#' @template graph_template
 #' @param attrs If \code{graph} is static, Numeric matrix with \eqn{n} rows, otherwise a list of numeric matrices with \eqn{n} rows.
 #' @param V Integer vector. Set of vertices from which the attributes will be retrieved.
 #' @param direction Character scalar. Either \code{"outgoing"}, \code{"incomming"}.
-#' @param self Logical scalar. When FALSE ignores ego's own attributes.
 #' @param self.attrs Logical scalar. When \code{TRUE} ego's attributes are included in the output
 #'  as the first row.
-#' @param valued Logical scalar. When TRUE stores the value of the edge, otherwise includes a one.
 #' @param fun Function. Applied to each
 #' @param as.df Logical scalar. When TRUE returns a data.frame instead of a list (see details).
 #' @details
@@ -93,6 +93,7 @@
 #' @export
 #' @include graph_data.R
 #' @author George G. Vega Yon
+#' @family data management functions
 egonet_attrs <- function(
   graph, attrs, V=NULL,
   direction = "outgoing",

@@ -24,7 +24,8 @@ as_diffnet(graph, toa, t0 = min(toa, na.rm = TRUE), t1 = max(toa, na.rm =
   id.and.per.vars = NULL, graph.attrs = NULL,
   undirected = getOption("diffnet.undirected"),
   self = getOption("diffnet.self"),
-  multiple = getOption("diffnet.multiple"))
+  multiple = getOption("diffnet.multiple"), name = "Diffusion Network",
+  behavior = "Unspecified")
 
 diffnet.attrs(graph, element = c("vertex", "graph"), attr.class = c("dyn",
   "static"), as.df = FALSE)
@@ -77,11 +78,15 @@ order of the rows in the attribute data.}
 
 \item{graph.attrs}{Graph dynamic attributes (not supported yet).}
 
-\item{undirected}{Logical scalar.}
+\item{undirected}{Logical scalar. When \code{TRUE} only the lower triangle will be processed.}
 
-\item{self}{Logical scalar.}
+\item{self}{Logical scalar. When \code{TRUE} allows loops (self edges).}
 
-\item{multiple}{Logical scalar.}
+\item{multiple}{Logical scalar. When \code{TRUE} allows multiple edges.}
+
+\item{name}{Character scalar. Name of the diffusion network (descriptive).}
+
+\item{behavior}{Character scalar. Name of the behavior been analyzed (innovation).}
 
 \item{element}{Character vector/scalar. Indicates what to retrieve/alter.}
 
@@ -131,7 +136,7 @@ indexes, character vectors are used jointly with the time period labels.}
 
 \item{skip.moran}{Logical scalar. When TRUE Moran's I is not reported (see details).}
 
-\item{valued}{Logical scalar. When FALSE non-zero values in the adjmat are set to one.}
+\item{valued}{Logical scalar. When \code{TRUE} weights will be considered. Otherwise non-zero values will be replaced by ones.}
 
 \item{FUN}{a function to be passed to lapply}
 }
@@ -158,11 +163,13 @@ throught time (dynamic).}
  \item \code{self}: Logical scalar.
  \item \code{undirected}: Logical scalar.
  \item \code{multiple}: Logical scalar.
+ \item \code{name}: Character scalar.
+ \item \code{behavior}: Character scalar.
 }
 }
 }
 \description{
-\code{diffnet} objects contain difussion of innovation networks. With adjacency
+\code{diffnet} objects contain difussion networks. With adjacency
 matrices and time of adoption (toa) vector as its main components, most of the
 package's functions have methods for this class of objects.
 }
@@ -297,6 +304,11 @@ fs_diffnet <- survey_to_diffnet(
 
 # Now, we extract the graph data and create a diffnet object from scratch
 graph <- fs_diffnet$graph
+ids <- fs_diffnet$meta$ids
+graph <- Map(function(g) {
+  dimnames(g) <- list(ids,ids)
+  g
+  }, g=graph)
 attrs <- diffnet.attrs(fs_diffnet, as.df=TRUE)
 toa   <- diffnet.toa(fs_diffnet)
 
@@ -329,7 +341,8 @@ George G. Vega Yon
 Default options are listed at \code{\link{netdiffuseR-options}}
 
 Other data management functions: \code{\link{edgelist_to_adjmat}},
-  \code{\link{isolated}}, \code{\link{survey_to_diffnet}}
+  \code{\link{egonet_attrs}}, \code{\link{isolated}},
+  \code{\link{survey_to_diffnet}}
 
 Other diffnet methods: \code{\link{\%*\%}},
   \code{\link{as.array.diffnet}}, \code{\link{c.diffnet}},

@@ -12,7 +12,7 @@ drop_isolated(graph, undirected = getOption("diffnet.undirected"))
 \arguments{
 \item{graph}{Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).}
 
-\item{undirected}{Logical. TRUE when the graph is undirected.}
+\item{undirected}{Logical scalar. When \code{TRUE} only the lower triangle will be processed.}
 }
 \value{
 When \code{graph} is an adjacency matrix:
@@ -61,6 +61,7 @@ George G. Vega Yon
 \seealso{
 Other data management functions: \code{\link{as_diffnet}},
   \code{\link{edgelist_to_adjmat}},
+  \code{\link{egonet_attrs}},
   \code{\link{survey_to_diffnet}}
 }
 \keyword{manip}

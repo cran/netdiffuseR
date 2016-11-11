@@ -19,8 +19,7 @@ classify(...)
 \method{classify_adopters}{default}(graph, toa, t0 = NULL, t1 = NULL,
   expo = NULL, include_censored = FALSE, ...)
 
-\method{ftable}{diffnet_adopters}(x, as.pcent = TRUE, addNA = TRUE,
-  digits = 2, ...)
+\method{ftable}{diffnet_adopters}(x, as.pcent = TRUE, digits = 2, ...)
 
 \method{as.data.frame}{diffnet_adopters}(x, row.names = NULL,
   optional = FALSE, ...)
@@ -47,9 +46,6 @@ classify(...)
 
 \item{as.pcent}{Logical scalar. When \code{TRUE} returns a table with percentages
 instead.}
-
-\item{addNA}{Logical scalar. When \code{TRUE} add an additional factor, \code{NA},
-to the values returned by \code{classify}.}
 
 \item{digits}{Integer scalar. Passed to \code{\link[base:round]{round}}.}
 
@@ -137,9 +133,10 @@ Valente, T. W. (1995). "Network models of the diffusion of innovations"
 }
 \seealso{
 Other statistics: \code{\link{cumulative_adopt_count}},
-  \code{\link{dgr}}, \code{\link{exposure}},
-  \code{\link{hazard_rate}}, \code{\link{infection}},
-  \code{\link{moran}}, \code{\link{struct_equiv}},
-  \code{\link{threshold}}
+  \code{\link{dgr}}, \code{\link{ego_variance}},
+  \code{\link{exposure}}, \code{\link{hazard_rate}},
+  \code{\link{infection}}, \code{\link{moran}},
+  \code{\link{struct_equiv}}, \code{\link{threshold}},
+  \code{\link{vertex_covariate_dist}}
 }
 

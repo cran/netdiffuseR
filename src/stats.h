@@ -7,23 +7,31 @@
 #define NETDIFFUSER_STATS_
 using namespace Rcpp;
 
-arma::colvec degree_cpp(
-    const arma::sp_mat & adjmat0, const int & cmode=2,
-    bool undirected=true, bool self=false, bool valued=false);
-
-arma::colvec exposure_cpp(
+arma::sp_mat vertex_covariate_dist(
     const arma::sp_mat & graph,
-    const arma::colvec & cumadopt,
-    const arma::colvec & attrs,
-    bool outgoing = true,
-    bool valued = true,
-    bool normalized = true);
+    const NumericMatrix & X,
+    double p=2.0
+);
 
-arma::mat cumulative_adopt_count_cpp(const arma::mat & cumadopt);
+arma::sp_mat vertex_mahalanobis_dist_cpp(
+    const arma::sp_mat & graph,
+    const arma::mat & X,
+    const arma::mat & W
+  );
 
-arma::rowvec hazard_rate_cpp(const arma::mat & cumadopt);
+arma::sp_mat vertex_covariate_compare(
+    const arma::sp_mat & graph,
+    const NumericVector & X,
+    std::string symbol
+  );
 
-arma::colvec threshold_cpp(const arma::mat & exposure,
-                           const arma::vec & toa, bool include_censored=false);
+double moran_cpp(
+    const arma::colvec & x,
+    const arma::sp_mat & w
+  );
 
+List struct_equiv_cpp(
+    const arma::sp_mat & gdist,
+    double v = 1.0
+);
 #endif

@@ -5,6 +5,8 @@ NULL
 NULL
 
 #' @importFrom igraph graph_from_adjacency_matrix set_vertex_attr distances
+#'  any_multiple graph_attr_names as_adj is.loop set_graph_attr
+#' @importFrom network as.edgelist is.multiplex is.directed has.loops
 NULL
 
 #' @useDynLib netdiffuseR
@@ -26,7 +28,7 @@ NULL
 #' @importFrom grDevices grey rgb colorRampPalette blues9
 #' @importFrom graphics grid par plot points symbols text layout legend lines
 #'  matplot plot.new plot.window hist mtext polygon image title .filled.contour
-#' @importFrom stats complete.cases runif reshape setNames ftable sd
+#' @importFrom stats complete.cases runif reshape setNames ftable sd pnorm var
 #' @importFrom utils getFromNamespace head str
 #' @importFrom boot boot
 #' @importFrom MASS bandwidth.nrd kde2d

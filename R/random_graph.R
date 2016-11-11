@@ -57,7 +57,7 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 
   # Generating the random graph
   if (t==1) graph <- rgraph_er_cpp(n, p, undirected, weighted, self)
-  else graph <- rgraph_er_dyn_cpp(n, t, p, undirected, weighted, self)
+  else graph <- lapply(1:t, function(x) rgraph_er_cpp(n, p, undirected, weighted, self))
 
   if (as.edgelist) {
     graph <- adjmat_to_edgelist(graph, undirected)
@@ -75,19 +75,23 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 
   attr(graph, "undirected") <- undirected
   return(graph)
-
-  return(graph)
 }
 
-#' Barabasi-Albert model
+#' Scale-free and Homophilic Random Networks
 #'
 #' Generates a scale-free random graph based on Bollabas et al. (2001), also know as
 #' \emph{Linearized Chord Diagram} (LCD) which has nice mathematical propoerties.
+#' And also scale-free homophilic networks when an vertex attribute \code{eta} is
+#' passed.
 #'
+#' @templateVar self TRUE
+#' @template graph_template
 #' @param m0 Integer scalar. Number of initial vertices in the graph.
 #' @param m Integer scalar. Number of new edges per vertex added.
 #' @param t Integer scalar. Number of time periods (steps).
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
+#' @param eta Numeric vector of length \code{t+m0}. When specified, it generates
+#' a scale-free homophilic network (see details).
+#'
 #' @return If \code{graph} is not provided, a static graph, otherwise an expanded
 #' graph (\code{t} aditional vertices) of the same class as \code{graph}.
 #'
@@ -97,6 +101,8 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 #' @aliases scale-free
 #' @concept Scale-free random graph
 #' @concept Barabasi-Albert model
+#' @concept Bollabas
+#' @concept Homophilic random graph
 #' @concept Random graph
 #' @keywords distribution
 #' @details
@@ -110,13 +116,47 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 #' is added one at a time
 #' \dQuote{counting \sQuote{outward half} of the edge being added as already contributing to the degrees}.
 #'
+#' When \code{self=FALSE}, the generated graph is created without autolinks. This
+#' means that at the beginning, if the number of links equals zero, all vertices
+#' have the same probability of receiving a new link.
+#'
+#' When \code{eta} is passed, it implements the model specified in De Almeida et al.
+#' (2013), a scale-free homophilic network. To do so \code{eta} is rescaled to
+#' be between 0 and 1 and the probability that the node \eqn{i} links to node \eqn{j}
+#' is as follows:
+#'
+#' \deqn{
+#' \frac{(1-A_{ij})k_j}{\sum_j (1-A_{ij})k_j}
+#' }{
+#' [(1-A(ij))k(j)]/\sum_j[(1-A(ij))k(j)]
+#' }
+#'
+#' Where \eqn{A_{ij} = |\eta_i - \eta_j|}{A(ij) = |eta(i) - eta(j)|} and
+#' \eqn{k_j}{k(j)} is the degree of the \eqn{j}-th vertex.
+#'
 #' @examples
-#' # Using another graph as a base graph
+#' # Using another graph as a base graph ---------------------------------------
 #' graph <- rgraph_ba()
 #' graph
 #'
 #' graph <- rgraph_ba(graph=graph)
-#' @export
+#'
+#' # Generating a scale-free homophilic graph (no loops) -----------------------
+#' set.seed(112)
+#' eta <- rep(c(1,1,1,1,2,2,2,2), 20)
+#' ans <- rgraph_ba(t=length(eta) - 1, m=3, self=FALSE, eta=eta)
+#'
+#' # Converting it to igraph (so we can plot it)
+#' ig  <- igraph::graph_from_adjacency_matrix(ans)
+#'
+#' # Neat plot showing the output
+#' oldpar <- par(no.readonly = TRUE)
+#' par(mfrow=c(1,2))
+#' plot(ig, vertex.color=c("red","blue")[factor(eta)], vertex.label=NA,
+#'     vertex.size=5, main="Scale-free homophilic graph")
+#' suppressWarnings(plot(dgr(ans), main="Degree distribution"))
+#' par(oldpar)
+#'
 #' @references
 #' Bollobás, B´., Riordan, O., Spencer, J., & Tusnády, G. (2001). The degree
 #' sequence of a scale-free random graph process. Random Structures & Algorithms,
@@ -127,8 +167,33 @@ rgraph_er <- function(n=10, t=1, p=0.3, undirected=getOption("diffnet.undirected
 #'
 #' Albert-László Barabási. (2016). Network Science: (1st ed.). Cambridge University Press.
 #' Retrieved from \url{http://barabasi.com/book/network-science}
+#'
+#' De Almeida, M. L., Mendes, G. A., Madras Viswanathan, G., & Da Silva, L. R. (2013).
+#' Scale-free homophilic network. European Physical Journal B, 86(2).
+#' \url{http://doi.org/10.1140/epjb/e2012-30802-x}
+#'
 #' @author George G. Vega Yon
-rgraph_ba <- function(m0=1L, m=1L, t=10L, graph=NULL) {
+#' @name rgraph_ba
+NULL
+
+#' @export
+#' @rdname rgraph_ba
+rgraph_ba <- function(m0=1L, m=1L, t=10L, graph=NULL, self=TRUE, eta=NULL) {
+
+  # Eta should be numeric vector
+  if (length(eta)) {
+    if (!is.vector(eta, "numeric"))
+      stop("-eta- should be a numeric vector. See ?as.vector(...,mode=\"numeric\")")
+
+    # Eta should have complete cases
+    test <- which(is.na(eta))
+    if (length(test))
+      stop("-eta- should have complete cases. Check the following elements:\n",
+           paste0(test, collapse=", "))
+
+    eta <- cbind(eta)
+  }
+
   # When the graph is not null, then use it as a seed (starting point)
   if (length(graph)) {
     d <- dgr(graph)
@@ -137,21 +202,49 @@ rgraph_ba <- function(m0=1L, m=1L, t=10L, graph=NULL) {
     # Checking undirected (if exists)
     checkingUndirected(graph)
 
+    # If calling eta, then use scale-free homophilic networks
+    scale_free_fun <- if (length(eta)) rgraph_sf_homo
+    else rgraph_ba_cpp
+
     # Parsing the class
-    out <- switch(class(graph),
-           matrix = rgraph_ba_cpp(methods::as(graph, "dgCMatrix"), d, m, t),
-           dgCMatrix =rgraph_ba_cpp(graph, d, m, t),
-           list = lapply(graph, function(x) rgraph_ba_cpp(x, dgr(x), m, t)),
-           diffnet = lapply(graph$graph, function(x) rgraph_ba_cpp(x, dgr(x), m, t)),
-           array = {
-             out <- vector("list", dim(graph)[3])
-             for (i in 1:dim(graph)[3])
-               out[[i]] <- rgraph_ba_cpp(methods::as(graph[,,i], "dgCMatrix"),
-                                         d[,i], m, t)
-             out
-           },
-           stopifnot_graph(graph)
-           )
+    cls <- class(graph)
+    out <- if ("matrix" %in% cls) {
+      do.call(
+        scale_free_fun,
+        c(list(graph=methods::as(graph, "dgCMatrix"), dgr=d, m=m, t=t, self=self),
+          if (length(eta)) list(eta=eta) else NULL)
+        )
+    } else if ("dgCMatrix" %in% cls) {
+      do.call(
+        scale_free_fun,
+        c(list(graph=graph, dgr=d, m=m, t=t, self=self),
+          if (length(eta)) list(eta=eta) else NULL)
+      )
+    } else if ("list" %in% cls) {
+      lapply(graph, function(x) {
+        do.call(
+          scale_free_fun,
+          c(list(graph=x, dgr=dgr(x), m=m, t=t, self=self),
+            if (length(eta)) list(eta=eta) else NULL)
+        )
+        })
+    } else if ("diffnet" %in% cls) {
+      lapply(graph$graph, function(x) {
+        do.call(
+          scale_free_fun,
+          c(list(graph=x, dgr=dgr(x), m=m, t=t, self=self),
+            if (length(eta)) list(eta=eta) else NULL)
+        )
+        })
+    } else if ("array" %in% cls) {
+      lapply(apply(graph, 3, methods::as, "dgCMatrix"), function(x) {
+        do.call(
+          scale_free_fun,
+          c(list(graph=x, dgr=dgr(x), m=m, t=t, self=self),
+            if (length(eta)) list(eta=eta) else NULL)
+        )
+      })
+    } else stopifnot_graph(graph)
 
     # BA is undirected by definition
     attr(out, "undirected") <- FALSE
@@ -173,6 +266,7 @@ rgraph_ba <- function(m0=1L, m=1L, t=10L, graph=NULL) {
       # BA is undirected by definition
       attr(out, "undirected") <- NULL
       graph$meta$undirected <- FALSE
+      graph$meta$self       <- self
 
       names(out) <- graph$meta$pers
 
@@ -242,7 +336,10 @@ rgraph_ba <- function(m0=1L, m=1L, t=10L, graph=NULL) {
       return(out)
     }
   } else {
-    out <- rgraph_ba_new_cpp(m0, m, t)
+    # If calling eta, then use scale-free homophilic networks
+    out <- if (!length(eta)) rgraph_ba_new_cpp(m0, m, t, self)
+    else rgraph_sf_homo_new(eta, m0, m, t, self)
+
     ids <- 1:(m0+t)
 
     attr(out, "undirected") <- FALSE

@@ -16,7 +16,7 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
   iddf  <- data.frame(id  = meta$ids, `_original_sort`=seq_len(n), check.names = FALSE )
   perdf <- data.frame(per = meta$pers)
 
-  # Vertex Attrubutes  ---------------------------------------------------------
+  # Vertex Attributes  ---------------------------------------------------------
   if (attr.class == "vertex") {
     if (is.dynamic) {
       # If null
@@ -71,7 +71,7 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
           # Checking columnnames
           test <- colnames(attrs[[1]])
           test <- if (length(test)) which(sapply(attrs, function(x) all(colnames(x) != test)))
-          else which(sapply(attrs, function(x) length(colnames(x))))
+          else which(!!sapply(attrs, function(x) length(colnames(x))))
 
           if (length(test))
             stop("Not all the matrices/data frames in -vertex.dyn.attrs- have the same colname(.):\n\t",
@@ -252,7 +252,7 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
         # Static: Vector -------------------------------------------------------
         if (length(attrs) != n)
           stop("The vector -vertex.static.attrs- has incorrect length.",
-               " Has ", nrow(attrs), " and should have ", n, ".")
+               " Has ", length(attrs), " and should have ", n, ".")
 
         # Returning
         attrs <- as.data.frame(attrs)
@@ -280,16 +280,16 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
         stop("The matrix/data.frame -graph.attrs- has incorrect number of rows.",
              " Has ", nrow(attrs), " and should have ", nper, ".")
 
-      # Checking the order of the data
-      attrs <- as.data.frame(attrs)
-      cnames <- colnames(attrs)
-      if (length(id.and.per.vars[2])) {
-        attrs <- merge(perdf, attrs, by.x="per", by.y=id.and.per.vars[2],
-                       all.x=TRUE, all.y=FALSE, sort=TRUE)
-        # Sorting names back
-        colnames(attrs)[1] <- id.and.per.vars[1]
-        attrs <- attrs[,cnames]
-      }
+      # # Checking the order of the data
+      # attrs <- as.data.frame(attrs)
+      # cnames <- colnames(attrs)
+      # if (length(id.and.per.vars[2])) {
+      #   attrs <- merge(perdf, attrs, by.x="per", by.y=id.and.per.vars[2],
+      #                  all.x=TRUE, all.y=FALSE, sort=TRUE)
+      #   # Sorting names back
+      #   colnames(attrs)[1] <- id.and.per.vars[1]
+      #   attrs <- attrs[,cnames]
+      # }
 
       # Checking colnames
       if (!length(cnames))
@@ -300,7 +300,7 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 
       return(attrs)
 
-    } else if (is.vector(attrs)) {
+    } else if (is.vector(attrs) && inherits(attrs, c("numeric", "character", "raw", "integer"))) {
 
       # Checking the length
       if (length(attrs) != nper)
@@ -321,18 +321,20 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 
 #' Creates a \code{diffnet} class object
 #'
-#' \code{diffnet} objects contain difussion of innovation networks. With adjacency
+#' \code{diffnet} objects contain difussion networks. With adjacency
 #' matrices and time of adoption (toa) vector as its main components, most of the
 #' package's functions have methods for this class of objects.
 #'
-#' @param graph A dynamic graph (see \code{\link{netdiffuseR-graphs}}).
+#' @templateVar dynamic TRUE
+#' @templateVar undirected TRUE
+#' @templateVar self TRUE
+#' @templateVar valued TRUE
+#' @templateVar multiple TRUE
+#' @template graph_template
 #' @param gmode Character scalar. Passed to \code{\link[sna:gplot]{sna::gplot}.}
 #' @param toa Numeric vector of size \eqn{n}. Times of adoption.
 #' @param t0 Integer scalar. Passed to \code{\link{toa_mat}}.
 #' @param t1 Integer scalar. Passed to \code{\link{toa_mat}}.
-#' @param undirected Logical scalar.
-#' @param self Logical scalar.
-#' @param multiple Logical scalar.
 #' @param ... In the case of \code{plot}, further arguments passed to \code{gplot}, for
 #' \code{summary}, further arguments to be passed to
 #' \code{\link[igraph:distances]{igraph::distances}}, otherwise is ignored.
@@ -364,7 +366,8 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #' @param as.df Logical scalar. When TRUE returns a data.frame.
 #' @param no.print Logical scalar. When TRUE suppress screen messages.
 #' @param skip.moran Logical scalar. When TRUE Moran's I is not reported (see details).
-#' @param valued Logical scalar. When FALSE non-zero values in the adjmat are set to one.
+#' @param name Character scalar. Name of the diffusion network (descriptive).
+#' @param behavior Character scalar. Name of the behavior been analyzed (innovation).
 #' @export
 #' @seealso Default options are listed at \code{\link{netdiffuseR-options}}
 #' @details
@@ -502,6 +505,11 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #'
 #' # Now, we extract the graph data and create a diffnet object from scratch
 #' graph <- fs_diffnet$graph
+#' ids <- fs_diffnet$meta$ids
+#' graph <- Map(function(g) {
+#'   dimnames(g) <- list(ids,ids)
+#'   g
+#'   }, g=graph)
 #' attrs <- diffnet.attrs(fs_diffnet, as.df=TRUE)
 #' toa   <- diffnet.toa(fs_diffnet)
 #'
@@ -549,6 +557,8 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #'  \item \code{self}: Logical scalar.
 #'  \item \code{undirected}: Logical scalar.
 #'  \item \code{multiple}: Logical scalar.
+#'  \item \code{name}: Character scalar.
+#'  \item \code{behavior}: Character scalar.
 #' }
 #' }
 #' @author George G. Vega Yon
@@ -557,7 +567,10 @@ as_diffnet <- function(graph, toa, t0=min(toa, na.rm = TRUE), t1=max(toa, na.rm 
                        id.and.per.vars = NULL,
                        graph.attrs = NULL,
                        undirected=getOption("diffnet.undirected"),
-                       self=getOption("diffnet.self"), multiple=getOption("diffnet.multiple")) {
+                       self=getOption("diffnet.self"),
+                       multiple=getOption("diffnet.multiple"),
+                       name = "Diffusion Network",
+                       behavior = "Unspecified") {
 
   # Step 0.0: Check if its diffnet! --------------------------------------------
   if (inherits(graph, "diffnet")) {
@@ -567,7 +580,7 @@ as_diffnet <- function(graph, toa, t0=min(toa, na.rm = TRUE), t1=max(toa, na.rm 
 
   # Step 1.1: Check graph ------------------------------------------------------
   meta <- classify_graph(graph)
-  if (meta$type=="static") stop("-graph- should be dynamic.")
+  if (meta$type=="static") stop("-graph- should be dynamic (see ?`netdiffuseR-graphs`).")
 
   # Step 1.2: Checking that lengths fit
   if (length(toa)!=meta$n) stop("-graph- and -toa- have different lengths (",
@@ -618,24 +631,26 @@ as_diffnet <- function(graph, toa, t0=min(toa, na.rm = TRUE), t1=max(toa, na.rm 
 
   # Step 4.1: Change the class (or set the names) of the graph -----------------
   if (meta$class=="array") {
-    graph <- lapply(1L:meta$nper, function(x) {
-      x <- methods::as(graph[,,x], "dgCMatrix")
-      dimnames(x) <- with(meta, list(ids, ids))
-      x
-    })
-    names(graph) <- meta$pers
+    graph <- apply(graph, 3, methods::as, Class="dgCMatrix")
   } else { # Setting names (if not before)
     if (!length(names(graph))) names(graph) <- meta$pers
     else if (any(names(graph) != meta$pers)) names(graph) <- meta$pers
-
-    for(i in 1L:meta$nper)
-      dimnames(graph[[i]]) <- with(meta, list(ids, ids))
   }
 
   # Step 5: Compleating attributes and building the object and returning
   meta$self       <- self
   meta$undirected <- undirected
   meta$multiple   <- multiple
+  meta$name       <- ifelse(!length(name), "", ifelse(is.na(name), "",
+                                                      as.character(name)))
+  meta$behavior   <- ifelse(!length(behavior), "", ifelse(is.na(behavior), "",
+                                                          as.character(behavior)))
+
+  # Removing dimnames
+  graph                  <- Map(function(x) Matrix::unname(x), x=graph)
+  dimnames(toa)          <- NULL
+  dimnames(mat$adopt)    <- NULL
+  dimnames(mat$cumadopt) <- NULL
 
   return(structure(list(
     graph = graph,
@@ -700,128 +715,7 @@ diffnet.attrs <- function(graph, element=c("vertex","graph"), attr.class=c("dyn"
 #' @rdname as_diffnet
 #' @export
 `diffnet.attrs<-` <- function(graph, element="vertex", attr.class="static", value) {
-
-  .Deprecated("[[<-.diffnet")
-
-  # Checking class
-  if (!inherits(graph, "diffnet")) stop("-graph- must be a 'diffnet' object")
-
-  # Checking what to add
-  if (any(!(element %in% c("vertex", "graph"))))
-    stop("-element- should be either 'vertex' or 'graph'.")
-
-  if (any(!(attr.class %in% c("static", "dyn"))))
-    stop("-attr.class- should be either 'dyn' or 'static'.")
-
-  if (("vertex" == element) && ("static" == attr.class)) {
-    # Checking object class
-    if (!(class(value) %in%  c("data.frame","matrix")))
-      stop("-value- should be either a matrix or a data.frame.")
-
-    # Checking dimensions
-    attlen <- nrow(value)
-    if (attlen != graph$meta$n) stop("-graph- and -value- have different lengths (",
-                                 graph$meta$n, " and ", attlen, " respectively). ",
-                                 "-value- should have n rows.")
-
-    # Checking dimnames and coercing into matrix before including them
-    # into the data
-    cnames <- colnames(value)
-
-    if (length(graph$vertex.static.attrs)) k <- ncol(graph$vertex.static.attrs)
-    else k <- 0
-
-    if (!length(cnames))
-      cnames <- sprintf("v.static.att%03d", 1:ncol(value) + k)
-
-    # Checking if it is a data.frame or not
-    if (!inherits(value, "data.frame")) {
-      warning("-value- will be coerced to a data.frame.")
-      value <- as.data.frame(value)
-    }
-
-    dimnames(value) <- list(graph$meta$ids, cnames)
-
-    # Adding the values
-    if (length(graph$vertex.static.attrs)) graph$vertex.static.attrs <- cbind(graph$vertex.static.attrs, value)
-    else graph$vertex.static.attrs <- value
-
-  } else if (("vertex" == element) && ("dyn" == attr.class)) {
-
-    # Act depending on the class of object
-    gdim <- unlist(graph$meta[c("n", "nper")])
-    if (inherits(value, "matrix") | inherits(value, "data.frame")) {
-
-      # Checking dimensions
-      test <- which(dim(value) != gdim)
-      if (length(test))
-        stop("Incorrect dimensions. The -value- must be a data.frame/matrix of size ",
-             gdim[1], "x", gdim[2])
-
-      # Coercing into a list
-      value <- lapply(seq_len(gdim[2]), function(x) value[,x, drop=FALSE])
-
-    } else if (inherits(value, "list")) {
-      # Checking all elements are data.frames/matrices
-      test <- which(sapply(value, function(x)
-        (!inherits(x, "matrix") & !inherits(x, "data.frame"))))
-
-      if (length(test))
-        stop("Some elements of -value- have incorrect class:\n\t",
-             paste(test, collapse = ", "), ".")
-
-      # Checking if all elements have the right dimension
-      test <- which(sapply(value, function(x) nrow(x) != gdim[1]))
-      if (length(test))
-        stop("Some of the elements of -value- have incorrect number of rows:\n\t",
-             paste(test, collapse=", "), ".")
-
-    } else {
-      stop("-value- should be either a matrix/data.frame of size n*T, or a list ",
-           "of size T with vectors of length n.")
-    }
-
-    # # Checking the length of the attributes
-    # if (length(value) != graph$meta$nper)
-    #   stop("The length -value-, ",length(value),
-    #        ", must coincide with the number of periods, ",graph$meta$nper,".")
-    #
-    # attlen <- lapply(value, nrow)
-    # if (any(attlen != graph$meta$n)) stop("-graph- and -value- have different lengths (",
-    #                                       graph$meta$n, " and ", paste(attlen, collapse=", "), "respectively). ",
-    #                                 "-value- should have n rows.")
-
-    # Coercing into matrices
-    cnames <- colnames(value[[1]])
-
-    if (length(graph$vertex.dyn.attrs[[1]])) k <- ncol(graph$vertex.dyn.attrs[[1]])
-    else k <- 0
-
-    if (!length(cnames))
-      cnames <- sprintf("v.static.att%03d", k + 1)
-
-    # Checking if it is a data.frame or not
-    if (!inherits(value[[1]], "data.frame"))
-      warning("-value- will be coerced to a data.frame.")
-
-    value <- lapply(value, function(y) {
-      if (!inherits(y, "data.frame")) y <- as.data.frame(y)
-      dimnames(y) <- list(graph$meta$ids, cnames)
-      y
-    })
-
-    # Adding the values
-    if (k) {
-      for (i in 1:graph$meta$nper)
-        graph$vertex.dyn.attrs[[i]] <- cbind(graph$vertex.dyn.attrs[[i]], value[[i]])
-    } else {
-      for (i in 1:graph$meta$nper)
-        graph$vertex.dyn.attrs[[i]] <- value[[i]]
-    }
-  }
-
-  graph
-
+  .Defunct("[[<-.diffnet")
 }
 
 #' @rdname as_diffnet
@@ -835,7 +729,7 @@ diffnet.toa <- function(graph) {
 #' @export
 `diffnet.toa<-` <- function(graph, i, value) {
   if (!inherits(graph, "diffnet")) stop("-graph- must be a 'diffnet' object")
-  if (missing(i)) i <- 1:graph$meta$n
+  if (missing(i)) i <- graph$meta$ids
 
   # Checking values of the data: normalizing
   test <- !(value %in% c(graph$meta$pers, NA))
@@ -845,7 +739,9 @@ diffnet.toa <- function(graph) {
                       ,") are not within the range of the original graph.")
 
   # Changing the value of toa
+  names(graph$toa) <- graph$meta$ids
   graph$toa[i] <- value
+  graph$toa <- unname(graph$toa)
 
   # Recalculating adopt and cumadopt
   mat <- toa_mat(graph$toa, t0=graph$meta$pers[1], t1=graph$meta$pers[graph$meta$nper])

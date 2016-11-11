@@ -1,9 +1,11 @@
 #' Convertion between graph classes
-#' @param graph A diffnet class object.
+#' @param graph Either a \code{\link{diffnet}} or \code{\link[igraph:igraph]{igraph}} graph object.
 #' @param slices An integer vector indicating the slices to subset.
-#' @return A list of \code{length(slices)} \code{\link[igraph:igraph]{igraph}}
+#' @return Either a list of \code{length(slices)} \code{igraph}
+#' (\code{diffnet_to_igraph}), or a \code{diffnet} object (\code{igraph_to_diffnet})
 #' objects.
 #' @export
+#' @family graph formats
 #' @examples
 #' # Reading the meddical innovation data into igraph --------------------------
 #' x <- diffnet_to_igraph(medInnovationsDiffNet)
@@ -30,6 +32,7 @@ diffnet_to_igraph <- function(graph, slices=1:nslices(graph)) {
   for (p in 1:length(out)) {
     # Index
     s <- slices[p]
+    dimnames(graph$graph[[s]]) <- with(graph$meta, list(ids,ids))
 
     # Graph
     tempgraph <- igraph::graph_from_adjacency_matrix(
@@ -54,6 +57,10 @@ diffnet_to_igraph <- function(graph, slices=1:nslices(graph)) {
       graph=tempgraph, name="toa", value=graph$toa
       )
 
+    # Attributes
+    tempgraph<-igraph::set_graph_attr(tempgraph, "name", graph$meta$name)
+    tempgraph<-igraph::set_graph_attr(tempgraph, "behavior", graph$meta$behavior)
+
     # Storing the value
     out[[p]] <- tempgraph
   }
@@ -65,10 +72,14 @@ diffnet_to_igraph <- function(graph, slices=1:nslices(graph)) {
 #' @param toavar Character scalar. Name of the attribute that holds the times of adoption.
 #' @param t0 Integer scalar. Passed to \code{\link{as_diffnet}}.
 #' @param t1 Integer scalar. Passed to \code{\link{as_diffnet}}.
+#' @param ... Further arguments passed to \code{\link{as_diffnet}}.
 igraph_to_diffnet <- function(
   graph, toavar,
   t0 = NULL,
-  t1 = NULL) {
+  t1 = NULL, ...) {
+
+  if (missing(toavar))
+    stop("Please provide the name of the -toa- var.")
 
   if (igraph::is_igraph(graph)) {
     # Getting attributes
@@ -90,7 +101,10 @@ igraph_to_diffnet <- function(
     }
 
     return(as_diffnet(mat, toa, t0, t1,
-               vertex.static.attrs = vertex.static.attrs))
+               vertex.static.attrs = vertex.static.attrs,
+               name = igraph::graph_attr(graph, "name"),
+               behavior = igraph::graph_attr(graph, "behavior"),
+               ...))
   }
 
   stopifnot_graph(graph)

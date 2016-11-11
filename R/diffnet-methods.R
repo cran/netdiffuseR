@@ -74,6 +74,8 @@ print.diffnet <- function(x, ...) {
 
     cat(
     "Dynamic network of class -diffnet-",
+    paste(" Name               :", meta$name),
+    paste(" Behavior           :", meta$behavior),
     paste(" # of nodes         :", nodesl ),
     paste(" # of time periods  :", meta$nper, sprintf("(%d - %d)", meta$pers[1], meta$pers[meta$nper])),
     paste(" Type               :", ifelse(meta$undirected, "undirected", "directed")),
@@ -131,7 +133,7 @@ summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
       g <- 1/g
       diag(g) <- 0
 
-      m[i] <- moran(object$cumadopt[,slices[i]], g)
+      m[i] <- moran(object$cumadopt[,slices[i]], g)["I"]
     }
   }
   # Computing adopters, cumadopt and hazard rate
@@ -166,7 +168,10 @@ summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
   # Quick Formatting function
   qf <- function(x, digits=2) sprintf(paste0("%.",digits,"f"), x)
 
-  cat("Diffusion network summary statistics\n",rule,"\n",sep="")
+  cat("Diffusion network summary statistics\n",
+      "Name     : ", meta$name, "\n",
+      "Behavior : ", meta$behavior, "\n",
+      rule,"\n",sep="")
   cat(header,"\n")
   cat(hline, "\n")
   for (i in 1:nrow(out)) {
@@ -197,10 +202,11 @@ summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
 #' (one network plot for each time period)  and the set of adopter and non-adopters
 #' in the network.
 #'
-#' @param graph A dynamic graph (see \code{\link{netdiffuseR-graphs}}).
+#' @templateVar dynamic TRUE
+#' @templateVar undirected TRUE
+#' @template graph_template
 #' @param cumadopt \eqn{n\times T}{n*T} matrix.
 #' @param slices Integer vector. Indicates what slices to plot. By default all are plotted.
-#' @param undirected Logical scalar.
 #' @param vertex.col A character vector of size 3 with colors names.
 #' @param vertex.shape A character vector of size 3 with shape names.
 #' @param vertex.cex Numeric vector of size \eqn{n}. Size of the vertices.
@@ -380,7 +386,7 @@ plot_diffnet.list <- function(graph, cumadopt, slices,
   xrange <- range(coords[,1])
   xlim   <- xrange + c(0, (xrange[2]-xrange[1])*intra.space[1]*(mfrow.par[2] - 1))
 
-  yrange <- range(coords[,1])
+  yrange <- range(coords[,2])
   ylim   <- yrange - c((yrange[2]-yrange[1])*intra.space[2]*(mfrow.par[1] - 1), 0)
 
   # Adjustems depending on the number of slice
@@ -463,13 +469,14 @@ plot_diffnet.list <- function(graph, cumadopt, slices,
 #' Draws a graph where the coordinates are given by time of adoption, x-axis,
 #' and threshold level, y-axis.
 #'
-#' @param graph A dynamic graph (see \code{\link{netdiffuseR-graphs}}).
+#' @templateVar dynamic TRUE
+#' @templateVar toa TRUE
+#' @templateVar undirected TRUE
+#' @template graph_template
 #' @param expo \eqn{n\times T}{n * T} matrix. Esposure to the innovation obtained from \code{\link{exposure}}
-#' @param toa Integer vector of size \eqn{n}. Times of Adoption
 #' @param t0 Integer scalar. Passed to \code{\link{threshold}}.
 #' @param include_censored Logical scalar. Passed to \code{\link{threshold}}.
 #' @param attrs Passed to \code{\link{exposure}} (via threshold).
-#' @param undirected Logical scalar.
 #' @param no.contemporary Logical scalar. When TRUE, edges for vertices with the same
 #' \code{toa} won't be plotted.
 #' @param main Character scalar. Title of the plot.
@@ -539,7 +546,7 @@ plot_threshold <- function(
   vertex.cex="degree", vertex.col=rgb(.3,.3,.8,.5),
   vertex.label="", vertex.lab.pos=NULL,  vertex.lab.cex=1,
   vertex.lab.adj = c(.5,.5), vertex.lab.col=rgb(.3,.3,.8,.9),
-  vertex.sides = 40, vertex.rot = 0,
+  vertex.sides = 40L, vertex.rot = 0,
   edge.width = 2, edge.col = rgb(.6,.6,.6,.1), arrow.length=.20,
   include.grid = TRUE, bty="n",
   vertex.bcol=vertex.col, jitter.factor=c(1,0), jitter.amount=c(.25,0),
@@ -652,9 +659,14 @@ plot_threshold.list <- function(
 
   # Checking sides
   test <- length(vertex.sides)
-  if (!inherits(vertex.sides, "integer") & !inherits(vertex.sides, "numeric")) {
+  if (!inherits(vertex.sides, c("integer", "numeric"))) {
     stop("-vertex.sides- must be integer.")
-  } else if (test == 1) {
+  } else if (inherits(vertex.sides, "numeric")) {
+    warning("-vertex.sides- will be coerced to integer.")
+    vertex.sides <- as.integer(vertex.sides)
+  }
+
+  if (test == 1) {
     vertex.sides <- rep(vertex.sides, n)
   } else if (test != n) {
     stop("-vertex.sides- must be of the same length as nnodes(graph).")
@@ -743,8 +755,9 @@ plot_threshold.list <- function(
 #' network, it creates an \code{nlevels} by \code{nlevels} matrix indicating the
 #' number of individuals that lie within each cell, and draws a heatmap.
 #'
-#' @param graph A dynamic graph (see \code{\link{netdiffuseR-graphs}}).
-#' @param toa Integer vector of size \eqn{T}. Passed to infection/susceptibility.
+#' @templateVar dynamic TRUE
+#' @templateVar toa TRUE
+#' @template graph_template
 #' @param t0 Integer scalar. See \code{\link{toa_mat}}.
 #' @param normalize Logical scalar.  Passed to infection/susceptibility.
 #' @param K Integer scalar.  Passed to infection/susceptibility.
@@ -771,6 +784,8 @@ plot_threshold.list <- function(
 #' By default the function will try to apply a kernel smooth function via
 #' \code{kde2d}. If not possible (because not enought data points), then
 #' the user should try changing the parameter \code{h} or set it equal to zero.
+#'
+#' \code{toa} is passed to \code{infection/susceptibility}.
 #'
 #' @return A list with three elements:
 #' \item{infect}{A numeric vector of size \eqn{n} with infectiousness levels}
@@ -972,7 +987,7 @@ plot_infectsuscep.list <- function(graph, toa, t0, normalize,
 #' toa <- sample(c(NA, 2010L,2015L), 20, TRUE)
 #' mat <- toa_mat(toa)
 #' plot_adopters(mat$cumadopt)
-#' @return List of matrices as described in \code{\link{cumulative_adopt_count}}
+#' @return A matrix as described in \code{\link{cumulative_adopt_count}}.
 #' @export
 #' @author George G. Vega Yon
 plot_adopters <- function(obj, freq=FALSE, what=c("adopt","cumadopt"),
@@ -989,7 +1004,7 @@ plot_adopters <- function(obj, freq=FALSE, what=c("adopt","cumadopt"),
 
   # Computing the TOA mat
   if (inherits(obj, "diffnet")) {
-    cumadopt <- cumulative_adopt_count(obj$cumadopt)
+    cumadopt <- cumulative_adopt_count(obj)
     adopt    <- colSums(obj$adopt)
     n        <- obj$meta$n
   }
@@ -1027,7 +1042,7 @@ plot_adopters <- function(obj, freq=FALSE, what=c("adopt","cumadopt"),
   if (length(bg)   > k) bg   <- bg[test]
   if (length(pch)  > k) pch  <- pch[test]
 
-  out <- matplot(times, y=mat, ylim=ylim, add=add, type=type,
+  matplot(times, y=mat, ylim=ylim, add=add, type=type,
           lty=lty, col=col, xlab=xlab, ylab=ylab, main=main, pch=pch,
           bg=bg,...)
 
@@ -1089,9 +1104,12 @@ plot_adopters <- function(obj, freq=FALSE, what=c("adopt","cumadopt"),
 #' @name diffnet-arithmetic
 #' @family diffnet methods
 `^.diffnet` <- function(x,y) {
+
+  if (y < 2) return(x)
+
   for (i in 1:x$meta$nper) {
     g <- x$graph[[i]]
-    for (p in 1:y)
+    for (p in 1:(y-1))
       x$graph[[i]] <- x$graph[[i]] %*% g
   }
   x
@@ -1111,10 +1129,17 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
 #' @rdname diffnet-arithmetic
 #' @export
 `/.diffnet` <- function(y, x) {
-  for (i in 1:x$meta$nper)
-    x$graph[[i]]@x <- y/(x$graph[[i]]@x)
 
-  x
+  if (inherits(x, "diffnet") && (inherits(y, "numeric") | inherits(y, "integer"))) {
+    for (i in 1:x$meta$nper)
+      x$graph[[i]]@x <- y/(x$graph[[i]]@x)
+    return(x)
+  } else if (inherits(y, "diffnet") && (inherits(x, "numeric") | inherits(x, "integer"))) {
+    for (i in 1:y$meta$nper)
+      y$graph[[i]]@x <- x/(y$graph[[i]]@x)
+    return(y)
+  } else stop("No method for x:", class(x), " and y:", class(y))
+
 }
 
 #' @rdname diffnet-arithmetic
@@ -1147,7 +1172,7 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
     # Checking labels exists
     test <- which(!(y %in% x$meta$ids))
     if (length(test))
-      stop("Some elements in -y- (right hand size of the expression) are not ",
+      stop("Some elements in -y- (right-hand side of the expression) are not ",
            "in the set of ids of the diffnet object:\n\t",
            paste0(y[test], collapse=", "),".")
 
@@ -1170,7 +1195,7 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
     x$graph <- mapply(`*`, x$graph, y$graph)
     return(x)
   } else if (inherits(x, "diffnet") & is.numeric(y)) {
-    x$graph <- mapply(`+`, x$graph, y)
+    x$graph <- mapply(`*`, x$graph, y)
     return(x)
 
   } else
@@ -1234,7 +1259,10 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
 
 #' @export
 #' @rdname diffnetmatmult
-`%*%.default` <- function(x, y) base::`%*%`(x=x,y=y)
+`%*%.default` <- function(x, y) {
+  if (inherits(y, "diffnet")) `%*%.diffnet`(x,y)
+  else base::`%*%`(x=x,y=y)
+}
 
 #' @export
 #' @rdname diffnetmatmult
@@ -1249,12 +1277,14 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
   if (inherits(x, "diffnet") && inherits(y, "diffnet")) {
     x$graph <- mapply(base::`%*%`, x$graph, y$graph)
   } else if (inherits(x, "diffnet") && !inherits(y, "diffnet")) {
-    if (identical(dim(x)[-3], dim(y)))
+    if (identical(rep(dim(x)[1],2), dim(y)))
       x$graph <- mapply(base::`%*%`, x$graph, mat2dgCList(y, x))
     else stop("-y- must have the same dimmension as -x-")
   } else if (inherits(y, "diffnet") && !inherits(x, "diffnet")) {
-    if (identical(dim(y)[-3], dim(x)))
-      x$graph <- mapply(base::`%*%`, mat2dgCList(x, y), y$graph)
+    if (identical(rep(dim(y)[1],2), dim(x))) {
+      y$graph <- mapply(base::`%*%`, mat2dgCList(x, y), y$graph)
+      return(y)
+    }
     else stop("-y- must have the same dimmension as -x-")
   }
 
@@ -1304,7 +1334,7 @@ as.array.diffnet <- function(x, ...) {
 
 #' Count the number of vertices/edges/slices in a graph
 #'
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
+#' @template graph_template
 #' @return For \code{nvertices} and \code{nslices}, an integer scalar equal to the number
 #' of vertices and slices in the graph. Otherwise, from \code{nedges}, either a list
 #' of size \eqn{t} with the counts of edges (non-zero elements in the adjacency matrices) at

@@ -1,26 +1,19 @@
-# Rcpp::sourceCpp("/home/george/Documents/usc/software/netdiffuseR/playground/adjmat.cpp")
-# library(microbenchmark)
-# library(netdiffuseR)
-
-# Important difference with the previous version, this one accounts for duplicate
-# dyads and also for self edges.
-
 #' Conversion between adjacency matrix and edgelist
 #'
 #' Generates adjacency matrix from an edgelist and vice versa.
 #'
 #' @param edgelist Two column matrix/data.frame in the form of ego -source- and
 #' alter -target- (see details).
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
+#' @templateVar undirected TRUE
+#' @templateVar self TRUE
+#' @templateVar multiple TRUE
+#' @template graph_template
 #' @param w Numeric vector. Strength of ties (optional).
 #' @param t0 Integer vector. Starting time of the ties (optional).
 #' @param t1 Integer vector. Finishing time of the ties (optional).
 #' @param t Integer scalar. Repeat the network \code{t} times (if no \code{t0,t1} are provided).
 #' @param simplify Logical scalar. When TRUE and \code{times=NULL} it will return an adjacency
 #' matrix, otherwise an array of adjacency matrices.
-#' @param undirected Logical scalar. TRUE when the graph is undirected.
-#' @param self Logical scalar. TRUE when self edges are excluded.
-#' @param multiple Logical scalar. TRUE when multiple edges should not be included
 #' (see details).
 #' @param keep.isolates Logical scalar. When FALSE, rows with \code{NA/NULL} values
 #' (isolated vertices unless have autolink) will be droped (see details).
@@ -130,16 +123,17 @@ edgelist_to_adjmat <- function(
   undirected=getOption("diffnet.undirected"), self=getOption("diffnet.self"), multiple=getOption("diffnet.multiple"),
   keep.isolates=TRUE, recode.ids=TRUE) {
 
-  switch (class(edgelist),
-    data.frame = edgelist_to_adjmat.data.frame(
+  cls <- class(edgelist)
+  if ("data.frame" %in% cls)
+    edgelist_to_adjmat.data.frame(
       edgelist, w, t0, t1, t, simplify, undirected, self, multiple,
       keep.isolates, recode.ids
-    ),
-    matrix = edgelist_to_adjmat.matrix(
+    )
+  else if ("matrix" %in% cls)
+    edgelist_to_adjmat.matrix(
       edgelist, w, t0, t1, t, simplify, undirected, self, multiple,
-      keep.isolates, recode.ids),
-    stop("-edgelist- should be either a data.frame, or a matrix.")
-  )
+      keep.isolates, recode.ids)
+  else stop("-edgelist- should be either a data.frame, or a matrix.")
 }
 
 # @rdname edgelist_to_adjmat
@@ -455,13 +449,20 @@ toa_mat <- function(obj, labels=NULL, t0=NULL, t1=NULL) {
     if (!length(t1)) t1 <- max(obj, na.rm = TRUE)
   }
 
-  switch(class(obj),
+  ans <- switch(class(obj),
     numeric = toa_mat.numeric(obj, labels, t0, t1),
     integer = toa_mat.integer(obj, labels, t0, t1),
     diffnet = with(obj, list(adopt=adopt,cumadopt=cumadopt)),
     stopifnot_graph(obj)
   )
-  # UseMethod("toa_mat")
+
+  if (inherits(obj, "diffnet")) {
+    dimnames(ans$adopt) <- with(obj$meta, list(ids,pers))
+    dimnames(ans$cumadopt) <- with(obj$meta, list(ids,pers))
+  }
+
+
+  return(ans)
 }
 
 # @rdname toa_mat
@@ -582,9 +583,8 @@ toa_diff.integer <- function(times, t0, labels) {
 #' Find and remove isolated vertices
 #'
 #' Find and remove unconnected vertices from the graph.
-#'
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
-#' @param undirected Logical. TRUE when the graph is undirected.
+#' @templateVar undirected TRUE
+#' @template graph_template
 #' @export
 #' @return
 #' When \code{graph} is an adjacency matrix:

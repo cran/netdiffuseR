@@ -16,7 +16,7 @@ susceptibility(graph, toa, t0 = NULL, normalize = TRUE, K = 1L, r = 0.5,
 \arguments{
 \item{graph}{A dynamic graph (see \code{\link{netdiffuseR-graphs}}).}
 
-\item{toa}{Integer vector with times of adoption (see details)}
+\item{toa}{Integer vector of length \eqn{n} with the times of adoption.}
 
 \item{t0}{Integer scalar. See \code{\link{toa_mat}}.}
 
@@ -28,7 +28,7 @@ susceptibility(graph, toa, t0 = NULL, normalize = TRUE, K = 1L, r = 0.5,
 
 \item{expdiscount}{Logical scalar. When TRUE, exponential discount rate is used (see details).}
 
-\item{valued}{Logical scalar. When FALSE non-zero values in the adjmat are set to one.}
+\item{valued}{Logical scalar. When \code{TRUE} weights will be considered. Otherwise non-zero values will be replaced by ones.}
 
 \item{outgoing}{Logical scalar. When \code{TRUE}, computed using outgoing ties.}
 }
@@ -118,14 +118,14 @@ George G. Vega Yon
 }
 \references{
 Thomas W. Valente, Stephanie R. Dyal, Kar-Hai Chu, Heather Wipfli, Kayo
-Fujimoto, Diffusion of innovations theory applied to global tobacco control
+Fujimoto Diffusion of innovations theory applied to global tobacco control
 treaty ratification, Social Science & Medicine, Volume 145, November 2015,
 Pages 89-97, ISSN 0277-9536
-(\url{http://dx.doi.org/10.1016/j.socscimed.2015.10.001})
+\url{http://dx.doi.org/10.1016/j.socscimed.2015.10.001}
 
-Myers, D. J. (2000). "The Diffusion of Collective Violence: Infectiousness,
-Susceptibility, and Mass Media Networks". American Journal of Sociology, 106(1),
-173–208. doi:10.1086/303110
+Myers, D. J. (2000). The Diffusion of Collective Violence: Infectiousness,
+Susceptibility, and Mass Media Networks. American Journal of Sociology, 106(1),
+173–208. \url{https://doi.org/10.1086/303110}
 }
 \seealso{
 The user can visualize the distribution of both statistics
@@ -133,9 +133,10 @@ by using the function \code{\link{plot_infectsuscep}}
 
 Other statistics: \code{\link{classify_adopters}},
   \code{\link{cumulative_adopt_count}}, \code{\link{dgr}},
-  \code{\link{exposure}}, \code{\link{hazard_rate}},
-  \code{\link{moran}}, \code{\link{struct_equiv}},
-  \code{\link{threshold}}
+  \code{\link{ego_variance}}, \code{\link{exposure}},
+  \code{\link{hazard_rate}}, \code{\link{moran}},
+  \code{\link{struct_equiv}}, \code{\link{threshold}},
+  \code{\link{vertex_covariate_dist}}
 }
 \keyword{univar}
 

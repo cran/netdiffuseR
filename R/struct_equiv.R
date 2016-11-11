@@ -2,7 +2,7 @@
 #'
 #' Computes structural equivalence between ego and alter in a network
 #'
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
+#' @template graph_template
 #' @param v Numeric scalar. Cohesion constant (see details).
 #' @param inf.replace Numeric scalar scalar. Replacing inf values obtained from \code{\link[igraph:distances]{igraph::distances}}.
 #' @param groupvar Either a character scalar (if \code{graph} is diffnet), or a vector of size \eqn{n}.
@@ -122,7 +122,7 @@ print.diffnet_se <- function(x, ...) {
       else " Access elements via $ (as a list). Available elements are:",
       "  - SE    : Structural equivalence matrix (n x n)",
       "  - d     : Euclidean distances matrix (n x n) ",
-      "  - gdist : Structural equivalence matrix (n x n)",
+      "  - gdist : Geodesic distances matrix (n x n)",
       sep="\n"
       )
 
@@ -190,6 +190,89 @@ struct_equiv_by <- function(graph, v, inf.replace, groupvar, mode, ...) {
 
   return(list(SE=SE, d=d, gdist=gdist))
 
+}
+
+#' Apply a function to a graph considering non-diagonal structural zeros
+#'
+#' When there are structural zeros given by groups, this function applies
+#' a particular transformation function of a graph by groups returning a
+#' square matrix of the same size of the original one with structural zeros
+#' and the function applied by \code{INDICES}.
+#'
+#' @param graph A graph
+#' @param INDICES A vector of length \eqn{n}.
+#' @param fun A function to apply
+#' @param ... Further arguments passed to \code{fun}
+#'
+#' @details The transformation function \code{fun} must return a square matrix
+#' of size \eqn{m\times m}{m*m}, where \eqn{m} is the size of the subgroup
+#' given by \code{INDICES}. See examples below
+#'
+#' @examples
+#' # Rewiring a graph by
+#'
+#' @export
+transformGraphBy <- function(graph, INDICES, fun=function(g,...) g, ...)
+  UseMethod("transformGraphBy")
+
+#' @export
+#' @rdname transformGraphBy
+transformGraphBy.diffnet <- function(graph, INDICES, fun=function(g,...) g, ...) {
+  for (per in graph$meta$pers)
+    graph$graph[[per]] <- transformGraphBy(graph$graph[[per]], INDICES, fun, ...)
+
+  return(graph)
+}
+
+#' @export
+#' @rdname transformGraphBy
+transformGraphBy.dgCMatrix <- function(graph, INDICES, fun=function(g,...) g, ...) {
+  # Checking length of the grouping variable
+  if (length(INDICES) != nvertices(graph))
+    stop("The length of -INDICES-, ",length(INDICES),
+         " elements, must be equal to the number of vertices in the graph, ",
+         nvertices(graph)," vertices.")
+
+  # Checking that is complete
+  test <- which(!complete.cases(INDICES))
+  if (length(test))
+    stop("-INDICES- must not have incomplete cases. Check the following elements:\n\t",
+         paste0(test, collapse=", "), ".")
+
+  # Does the graph has ids?
+  if (!length(rownames(graph))) {
+    rn <- 1:nvertices(graph)
+    dimnames(graph) <- list(rn, rn)
+  }
+
+  # Splitting the data and computing structural equivalence per case
+  G    <- unique(INDICES)
+  n    <- nvertices(graph)
+  ans  <- methods::new("dgCMatrix", Dim=c(n,n), p=rep(0L,n+1L))
+
+  rn <- NULL
+  N  <- 0L
+  for (g in G) {
+    # Subsetting the graph
+    test <- which(INDICES == g)
+    subg <- graph[test, test, drop=FALSE]
+    rn   <- c(rn, rownames(subg))
+    ng   <- nvertices(subg)
+
+    # Calculating indices
+    i <- (N + 1L):(N + ng)
+
+    # Computing
+    ans[i,i] <- fun(subg,...)
+    N <- N + ng
+  }
+
+  # Giving names
+  dimnames(ans) <- list(rn, rn)
+
+  # Ordening output
+  i <- rownames(graph)
+  return(ans[i,i])
 }
 
 # @rdname struct_equiv

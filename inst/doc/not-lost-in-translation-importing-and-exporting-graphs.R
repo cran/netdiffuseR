@@ -63,10 +63,10 @@ fakesurvey$id
 diffnet2 <- edgelist_to_diffnet(
   edgelist = fakeEdgelist[,1:2], # Passed to edgelist_to_adjmat
   w        = fakeEdgelist$value, # Passed to edgelist_to_adjmat
-  dat      = fakesurvey,         # Data frame with -idvar- and -toavar-
-  idvar    = "id",               # Name of the -idvar- in -dat-
-  toavar   = "toa",              # Name of the -toavar- in -dat-
-  keep.isolates = TRUE           # Passed to edgelist_to_adjmat   
+  dat      = fakesurvey,        # Data frame with -idvar- and -toavar-
+  idvar    = "id",              # Name of the -idvar- in -dat-
+  toavar   = "toa",             # Name of the -toavar- in -dat-
+  keep.isolates = TRUE          # Passed to edgelist_to_adjmat   
 )
 diffnet2
 

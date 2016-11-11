@@ -22,7 +22,7 @@ plot_diffnet(graph, cumadopt, slices = NULL, undirected = TRUE,
 
 \item{slices}{Integer vector. Indicates what slices to plot. By default all are plotted.}
 
-\item{undirected}{Logical scalar.}
+\item{undirected}{Logical scalar. When \code{TRUE} only the lower triangle will be processed.}
 
 \item{vertex.col}{A character vector of size 3 with colors names.}
 
@@ -113,9 +113,11 @@ plot_diffnet(graph, adopt$cumadopt)
 George G. Vega Yon
 }
 \seealso{
-Other visualizations: \code{\link{diffusionMap}},
-  \code{\link{drawColorKey}}, \code{\link{hazard_rate}},
-  \code{\link{plot_adopters}}, \code{\link{plot_diffnet2}},
+Other visualizations: \code{\link{dgr}},
+  \code{\link{diffusionMap}}, \code{\link{drawColorKey}},
+  \code{\link{grid_distribution}},
+  \code{\link{hazard_rate}}, \code{\link{plot_adopters}},
+  \code{\link{plot_diffnet2}},
   \code{\link{plot_infectsuscep}},
   \code{\link{plot_threshold}},
   \code{\link{rescale_vertex_igraph}}

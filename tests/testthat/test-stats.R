@@ -1,4 +1,4 @@
-context("Exposure")
+context("Stats functions (including exposure)")
 
 test_that("exposure calculations", {
   # Generating data
@@ -6,25 +6,46 @@ test_that("exposure calculations", {
   diffnet <- rdiffnet(40,5, seed.p.adopt = .1)
 
   # Default
-  exp_0_diffnet <- exposure(diffnet)
-  exp_0_manual <- as.matrix(do.call(cbind,lapply(diffnet$meta$pers, function(x) {
+  ans0 <- exposure(diffnet)
+  ans1 <- as.matrix(do.call(cbind,lapply(diffnet$meta$pers, function(x) {
     s <- diffnet$graph[[x]]
      ( s %*% diffnet$cumadopt[,x,drop=FALSE])/(1e-15+Matrix::rowSums(s))
   })))
+  ans2 <- exposure(diffnet$graph, cumadopt = diffnet$cumadopt)
+  ans3 <- exposure(as.array(diffnet), cumadopt = diffnet$cumadopt)
 
-  expect_equivalent(exp_0_diffnet, exp_0_manual)
+  expect_equivalent(ans0, ans1)
+  expect_equivalent(ans0, ans2)
+  expect_equivalent(ans0, ans3)
+
+  # With an attribute
+  X <- matrix(diffnet[["real_threshold"]], ncol=5, nrow=40, byrow = FALSE)
+  ans0 <- exposure(diffnet, attrs=X)
+  ans1 <- exposure(diffnet, attrs="real_threshold")
+  expect_equivalent(ans0, ans1)
+
+  expect_error(exposure(diffnet$graph, attrs="real_threshold"),"is only valid for")
 
   # Struct Equiv
   se <- struct_equiv(diffnet)
-  se <- lapply(se, function(x) methods::as((x$SE)^(-1), "dgCMatrix"))
-  exp_1_diffnet <- exposure(diffnet, alt.graph = se)
+  se <- lapply(se, function(x) {
+    ans <- methods::as(x$SE, "dgCMatrix")
+    ans@x <- 1/(ans@x + 1e-20)
+    ans
+  })
+  exp_1_diffnet <- exposure(diffnet, alt.graph = se, valued=TRUE)
+  se2 <- vector("list", length(se))
   exp_1_manual <- as.matrix(do.call(cbind,lapply(diffnet$meta$pers, function(x) {
-    s <- struct_equiv(diffnet$graph[[x]])$SE^(-1)
-    s[!is.finite(s)] <- 0
-    ( s %*% diffnet$cumadopt[,x,drop=FALSE])/(1e-15+base::rowSums(s))
+    s <- methods::as(struct_equiv(diffnet$graph[[x]])$SE, "dgCMatrix")
+    s@x <- 1/(s@x + 1e-20)
+    se2[[x]] <<- s
+    ( s %*% diffnet$cumadopt[,x,drop=FALSE])/(Matrix::rowSums(s) +1e-20)
   })))
 
-  # expect_equivalent(exp_1_diffnet, exp_1_manual)
+  expect_equivalent(unname(exp_1_diffnet), unname(exp_1_manual))
+
+  #
+
 })
 
 test_that("Times of Adoption", {
@@ -68,4 +89,89 @@ test_that("Times of Adoption", {
   #   toa_mat(toa),
   #   toa_mat2(toa), times = 1000
   # )
+})
+
+# ------------------------------------------------------------------------------
+test_that("Threshold levels", {
+  set.seed(11231)
+  g <- rdiffnet(n=100, t=5, seed.nodes = "central", rgraph.args=list(m=4),
+                threshold.dist = function(x) .5)
+
+  ans1 <- threshold(g)
+  ans2 <- exposure(g)
+  ans2 <- sapply(1:100, function(x) {
+    ans2[x, g$toa[x]]
+  })
+
+  expect_equal(as.vector(ans1), ans2)
+})
+
+# ------------------------------------------------------------------------------
+test_that("vertex_covariate_distance", {
+  set.seed(123131231)
+  n <- 20
+  X <- matrix(runif(n*2, -1,1), ncol=2)
+  W <- rgraph_ws(n,4,.2)
+
+  D <- vertex_covariate_dist(W,X)
+  D2 <- methods::as(matrix(0, n,n), "dgCMatrix")
+
+  D2 <- methods::as(as.matrix(dist(X)), "dgCMatrix")*W
+
+  expect_equal(sum(D2-D), 0)
+})
+
+
+# ------------------------------------------------------------------------------
+test_that("vertex_mahalanobis_dist", {
+  set.seed(123131231)
+  n <- 20
+  X <- matrix(runif(n*2, -1,1), ncol=2)
+  G <- rgraph_ws(n,4,.2)
+  W <- var(X)
+
+  ans1 <- vertex_mahalanobis_dist(G,X, W)
+  ans2 <- methods::as(matrix(0, n,n), "dgCMatrix")
+
+  for (i in 1:n)
+    for (j in 1:n)
+      ans2[i,j] <- sqrt(mahalanobis(X[i,] - X[j,], FALSE, cov=W))
+
+  ans2 <-ans2*G
+
+  expect_equal(ans1,ans2)
+})
+
+# ------------------------------------------------------------------------------
+test_that("vertex_covarite_compare", {
+  g <- methods::as(matrix(c(0,1,1,0,0,0,0,0,0), ncol=3), "dgCMatrix")
+  x <- cbind(1, 1, 3)
+  expect_equal(vertex_covariate_compare(g, x, "distance")@x, 2)
+  expect_equal(vertex_covariate_compare(g, x, "quaddist")@x, 4)
+  expect_equal(vertex_covariate_compare(g, x, "equal")@x, 1)
+  expect_equal(vertex_covariate_compare(g, x, "greater")@x, 1)
+  expect_equal(vertex_covariate_compare(g, x, "greaterequal")@x, c(1,1))
+  expect_equal(vertex_covariate_compare(g, x, "smaller")@x, numeric())
+  expect_equal(vertex_covariate_compare(g, x, "smallerequal")@x, 1)
+})
+
+# ------------------------------------------------------------------------------
+test_that("Classify adopter", {
+  # Creating graph
+  g <- matrix(0, ncol=3, nrow=3)
+  g[cbind(1,2:3)] <- 1
+  g[cbind(2:3,1)] <- 1
+  g[2,3] <- 1
+  g[3,2] <- 1
+
+  g <- lapply(1:3, function(x) methods::as(g, "dgCMatrix"))
+
+  # Cumultive adoption matrix
+  toa <- 1:3
+
+  dn <- as_diffnet(g, toa)
+  ans <- ftable(classify(dn))
+
+  expect_equal(sum(ans), 100, tolerance = .01)
+  expect_equal(colSums(ans)/100, c(0, 0,1/3,1/3,1/3), tolerance = .005)
 })

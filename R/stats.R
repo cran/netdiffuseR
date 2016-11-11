@@ -1,16 +1,16 @@
 #' Indegree, outdegree and degree of the vertices
 #'
 #' Computes the requested degree measure for each node in the graph.
-#'
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).
+#' @templateVar undirected TRUE
+#' @templateVar self TRUE
+#' @templateVar valued TRUE
+#' @template graph_template
 #' @param cmode Character scalar. Either "indegree", "outdegree" or "degree".
-#' @param undirected Logical scalar. TRUE when the graph is undirected.
-#' @param self Logical scalar.. TRUE when self edges should not be considered.
-#' @param valued Logical scalar. When FALSE sets every non-zero entry of \code{graph} to one.
-#' @return Either a numeric vector of size \eqn{n}{n} with the degree of each node (if graph is
-#' a matrix), or a matrix of size \eqn{n\times T}{n * T}.
+#' @return A numeric matrix of size \eqn{n\times T}{n * T}. In the case of \code{plot},
+#'  returns an object of class \code{\link[graphics:hist]{histogram}}.
 #' @export
 #' @family statistics
+#' @family visualizations
 #' @keywords univar
 #' @aliases degree indegree outdegree
 #' @examples
@@ -33,21 +33,101 @@
 #'
 #' any(d_valued!=d_unvalued)
 #'
+#' # Classic Scale-free plot ---------------------------------------------------
+#' set.seed(1122)
+#' g <- rgraph_ba(t=1e3-1)
+#' hist(dgr(g))
+#'
+#' # Since by default uses logscale, here we suppress the warnings
+#' # on points been discarded for <=0.
+#' suppressWarnings(plot(dgr(g)))
+#'
 #' @author George G. Vega Yon
 dgr <- function(graph, cmode="degree",
                 undirected=getOption("diffnet.undirected", FALSE),
                 self=getOption("diffnet.self",FALSE),
                 valued=getOption("diffnet.valued", FALSE)) {
 
-  switch (class(graph),
-    matrix = dgr.matrix(graph, cmode, undirected, self, valued),
-    array = dgr.array(graph, cmode, undirected, self, valued),
-    dgCMatrix = dgr.dgCMatrix(graph, cmode, undirected, self, valued),
-    list = dgr.list(graph, cmode, undirected, self, valued),
-    diffnet = dgr.list(graph$graph, cmode, undirected = graph$meta$undirected, self, valued),
-    stopifnot_graph(graph)
-  )
+  cls <- class(graph)
+  ans <- if ("matrix" %in% cls) {
+    dgr.matrix(graph, cmode, undirected, self, valued)
+  } else if ("array" %in% cls) {
+    dgr.array(graph, cmode, undirected, self, valued)
+  } else if ("dgCMatrix" %in% cls) {
+    dgr.dgCMatrix(graph, cmode, undirected, self, valued)
+  } else if ("list" %in% cls) {
+    dgr.list(graph, cmode, undirected, self, valued)
+  } else if ("diffnet" %in% cls) {
+    dgr.list(graph$graph, cmode, undirected = graph$meta$undirected, self, valued)
+  } else if ("igraph" %in% cls) {
+    graph <- as_generic_graph.igraph(graph)
+    dgr.dgCMatrix(graph$graph[[1]], cmode, graph$meta$undirected, self, valued)
+  } else if ("network" %in% cls) {
+    graph <- as_generic_graph.network(graph)
+    dgr.dgCMatrix(graph$graph[[1]], cmode, graph$meta$undirected, self, valued)
+  } else stopifnot_graph(graph)
 
+  return(structure(ans, class=c("diffnet_degSeq", class(ans))))
+}
+
+# cmode:
+#  0: in
+#  1: out
+#  2: total
+.dgr <- function(graph, cmode, undirected, self, valued) {
+
+  if (cmode < 0 || cmode > 2) stop("Invalid degree.")
+
+  # Checking if it is valued or not
+  n <- nrow(graph)
+  if (ncol(graph) != n)
+    stop("-graph- should be a square matrix.")
+
+  if (!valued)
+    graph@x <- rep(1, length(graph@x))
+
+  # Computing sums
+  ans <- if (cmode == 2) {
+    if (undirected)  Matrix::rowSums(graph)
+    else (Matrix::rowSums(graph) + Matrix::colSums(graph))
+  } else if (cmode == 0) {
+    Matrix::colSums(graph)
+  } else {
+    Matrix::rowSums(graph)
+  }
+
+  # Checking if self or not
+  ans <- if (!self) {
+    if (cmode == 2) {
+      if (!undirected) ans - Matrix::diag(graph)*2
+      else ans - Matrix::diag(graph)
+    } else {
+      ans - Matrix::diag(graph)
+    }
+  }
+
+  return(matrix(ans, ncol=1))
+}
+
+#' @export
+#' @rdname dgr
+#' @param x An \code{diffnet_degSeq object}
+#' @param breaks Passed to \code{\link{hist}}.
+#' @param log Passed to \code{\link{plot}} (see \code{\link{par}}).
+#' @param hist.args Arguments passed to \code{\link{hist}}.
+#' @param xlab Character scalar. Passed to \code{\link{plot}}.
+#' @param ylab Character scalar. Passed to \code{\link{plot}}.
+#' @param ... Further arguments passed to \code{\link{plot}}.
+#' @param slice Integer scalar. In the case of dynamic graphs, number of time
+#'  point to plot.
+#' @param y Ignored
+#' @param freq Logical scalar. When \code{TRUE} the y-axis will reflex counts,
+#'  otherwise densities.
+plot.diffnet_degSeq <- function(x, breaks = min(100L, nrow(x)/5), freq=FALSE, y=NULL, log="xy",
+                                hist.args=list(), slice=ncol(x), xlab="Degree", ylab="Freq",...) {
+  ans <- do.call(hist, c(hist.args, list(x=x[,slice], breaks = breaks, plot=FALSE)))
+  with(ans, plot(x=mids,y=if (freq) counts else density,log=log, xlab=xlab, ylab=ylab,...))
+  invisible(ans)
 }
 
 # @rdname dgr
@@ -67,7 +147,7 @@ dgr.matrix <- function(
             '"indegree", "outdegree" or "degree".')
 
   # Computing degree
-  output <- degree_cpp(methods::as(graph, "dgCMatrix"), cmode, undirected, self,
+  output <- .dgr(methods::as(graph, "dgCMatrix"), cmode, undirected, self,
                        valued)
 
   # Naming
@@ -94,7 +174,7 @@ dgr.dgCMatrix <- function(graph, cmode, undirected, self, valued) {
             '"indegree", "outdegree" or "degree".')
 
   # Computing degree
-  output <- degree_cpp(graph, cmode, undirected, self, valued)
+  output <- .dgr(graph, cmode, undirected, self, valued)
 
   # Naming
   rn <- rownames(graph)
@@ -159,15 +239,17 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #' attribute weighted (5) network-metric weighted (e.g., central nodes have more
 #' influence), and attribute-weighted (e.g., based on homophily or tie strength).
 #'
-#' @param graph A dynamic graph (see \code{\link{netdiffuseR-graphs}}).
-#' @param cumadopt nxT matrix. Cumulative adoption matrix obtained from
+#' @templateVar valued TRUE
+#' @templateVar dynamic TRUE
+#' @templateVar self TRUE
+#' @template graph_template
+#' @param cumadopt \eqn{n\times T}{n * T} matrix. Cumulative adoption matrix obtained from
 #' \code{\link{toa_mat}}
 #' @param attrs Either a character scalar (if \code{graph} is diffnet),
 #' or a numeric matrix of size \eqn{n\times T}{n * T}. Weighting for each time, period (see details).
 #' @param alt.graph Either a dynamic graph that should be used instead of \code{graph},
 #' or \code{"se"} (see details).
 #' @param outgoing Logical scalar. When \code{TRUE}, computed using outgoing ties.
-#' @param valued Logical scalar. When \code{FALSE}, values of \code{graph} are set to one.
 #' @param normalized Logical scalar. When \code{TRUE}, the exposure will be between zero
 #' and one (see details).
 #' @param ... Further arguments passed to \code{\link{struct_equiv}} (only used when
@@ -339,10 +421,43 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #' @return A matrix of size \eqn{n\times T}{n * T} with exposure for each node.
 #' @export
 #' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
+#' @name exposure
+NULL
+
+#
+.exposure <- function(graph, cumadopt, attrs, outgoing, valued, normalized, self) {
+
+  # Getting the parameters
+  n <- nrow(graph)
+  if (n!=ncol(graph))
+    stop("-graph- is not squared.")
+
+  # Checking values
+  if (!valued)
+    graph@x <- rep(1, length(graph@x))
+
+  # Direction of the exposure
+  if (!outgoing)
+    graph <- t(graph)
+
+  # Checking self
+  if (!self) graph <- sp_diag(graph, rep(0, nnodes(graph)))
+
+  ans <- ( graph %*% (attrs * cumadopt) )
+
+  if (normalized) as.vector(ans/( graph %*% attrs + 1e-20 ))
+  else as.vector(ans)
+}
+
+# library(microbenchmark)
+# microbenchmark(.exposure, netdiffuseR:::exposure_cpp)
+
+#' @export
+#' @rdname exposure
 exposure <- function(graph, cumadopt, attrs = NULL, alt.graph=NULL,
                      outgoing=getOption("diffnet.outgoing", TRUE),
                      valued=getOption("diffnet.valued", FALSE), normalized=TRUE,
-                     groupvar=NULL,
+                     groupvar=NULL, self=getOption("diffnet.self"),
                      ...) {
 
   # Checking diffnet attributes
@@ -367,7 +482,7 @@ exposure <- function(graph, cumadopt, attrs = NULL, alt.graph=NULL,
     if (!inherits(graph, "diffnet")) {
       stop("-cumadopt- should be provided when -graph- is not of class 'diffnet'")
     } else {
-      cumadopt <- graph$cumadopt
+      cumadopt <- toa_mat(graph)$cumadopt
     }
 
   # Checking diffnet graph
@@ -398,24 +513,30 @@ exposure <- function(graph, cumadopt, attrs = NULL, alt.graph=NULL,
 
       se
 
-    } else alt.graph
+    } else {
+      if (!valued)
+        warning("The -alt.graph- will be treated as 0/1 graph (value=FALSE).")
+      alt.graph
+    }
 
 
   }
 
-  switch (class(graph),
-    array   = exposure.array(graph, cumadopt, attrs, outgoing, valued, normalized),
-    list    = exposure.list(graph, cumadopt, attrs, outgoing, valued, normalized),
-    diffnet = exposure.list(graph, cumadopt, attrs, outgoing, valued, normalized),
-    stopifnot_graph(graph)
-  )
+  cls <- class(graph)
+  if ("array" %in% cls) {
+    exposure.array(graph, cumadopt, attrs, outgoing, valued, normalized, self)
+  } else if ("list" %in% cls) {
+    exposure.list(graph, cumadopt, attrs, outgoing, valued, normalized, self)
+  #} else if ("diffnet" %in% cls) {
+  #  exposure.list(graph, cumadopt, attrs, outgoing, valued, normalized, self)
+  } else stopifnot_graph(graph)
 }
 
 # @rdname exposure
 # @export
 exposure.array <- function(
   graph, cumadopt, attrs,
-  outgoing, valued, normalized) {
+  outgoing, valued, normalized, self) {
 
   # Preparing the data
   n <- nrow(graph)
@@ -440,7 +561,8 @@ exposure.array <- function(
   if (!length(tn)) tn <- 1:ncol(cumadopt)
 
   # Calculating the exposure, and asigning names
-  output <- exposure_for(graphl, cumadopt, attrs, outgoing, valued, normalized)
+  output <- exposure_for(graphl, cumadopt, attrs, outgoing, valued, normalized,
+                         self)
   dimnames(output) <- list(rn, tn)
   output
 }
@@ -449,7 +571,7 @@ exposure.array <- function(
 # @export
 exposure.list <- function(
   graph, cumadopt, attrs,
-  outgoing, valued, normalized) {
+  outgoing, valued, normalized, self) {
 
   # attrs can be either
   #  degree, indegree, outdegree, or a user defined vector.
@@ -468,7 +590,8 @@ exposure.list <- function(
     graph[which(test)] <- lapply(graph[which(test)],
                                  function(x) methods::as(x, "dgCMatrix"))
 
-  output <- exposure_for(graph, cumadopt, attrs, outgoing, valued, normalized)
+  output <- exposure_for(graph, cumadopt, attrs, outgoing, valued, normalized,
+                         self)
 
   rn <- rownames(cumadopt)
   if (!length(rn)) rn <- 1:nrow(cumadopt)
@@ -480,11 +603,11 @@ exposure.list <- function(
   output
 }
 
-exposure_for <- function(graph, cumadopt, attrs, outgoing, valued, normalized) {
+exposure_for <- function(graph, cumadopt, attrs, outgoing, valued, normalized, self) {
   out <- matrix(nrow = nrow(cumadopt), ncol = ncol(cumadopt))
   for (i in 1:nslices(graph))
-    out[,i]<-exposure_cpp(graph[[i]], cumadopt[,i,drop=FALSE], attrs[,i,drop=FALSE],
-                 outgoing, valued, normalized)
+    out[,i]<- .exposure(graph[[i]], cumadopt[,i,drop=FALSE], attrs[,i,drop=FALSE],
+                 outgoing, valued, normalized, self)
   return(out)
 }
 
@@ -512,12 +635,25 @@ exposure_for <- function(graph, cumadopt, attrs, outgoing, valued, normalized) {
 #' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 cumulative_adopt_count <- function(obj) {
 
-  if (inherits(obj, "diffnet")) obj <- obj$cumadopt
+  if (inherits(obj, "diffnet")) x <- obj$cumadopt
+  else x <- obj
 
-  x <- cumulative_adopt_count_cpp(obj)
-  dimnames(x) <- list(c("num", "prop", "rate"), colnames(obj))
-  return(x)
+  # Checking colnames
+  cn <- if (inherits(obj, "diffnet")) obj$meta$pers
+  else colnames(obj)
+  if (length(cn) == 0) cn <- as.character(1:ncol(obj))
+
+  q <- colSums(x)
+  t <- length(q)
+  structure(
+    rbind(
+      q,
+      q/nrow(x),
+      c(0,(q[-1] - q[-t])/(q[-t] + 1e-15))
+    ), dimnames = list(c("num", "prop", "rate"), cn)
+  )
 }
+
 
 #' Network Hazard Rate
 #'
@@ -607,14 +743,27 @@ cumulative_adopt_count <- function(obj) {
 #' @export
 #' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 hazard_rate <- function(obj, no.plot=FALSE, include.grid=TRUE, ...) {
+  if (inherits(obj, "diffnet")) {
+    dn  <- with(obj$meta, list(ids, pers))
+    obj <- obj$cumadopt
+    dimnames(obj) <- dn
+  } else {
+    if (!length(colnames(obj)))
+      colnames(obj) <- seq_len(ncol(obj))
+  }
 
-  if (inherits(obj, "diffnet")) obj <- obj$cumadopt
+  q <- colSums(obj)
+  t <- length(q)
 
-  x <- hazard_rate_cpp(obj)
-  dimnames(x) <- list("hazard", colnames(obj))
-  class(x) <- c("diffnet_hr", class(x))
+  x <- structure(
+    rbind(c(0,(q[-1] - q[-t])/(nrow(obj) - q[-t] + 1e-15)))
+    , dimnames = list("hazard", colnames(obj)),
+    class=c("diffnet_hr", "matrix")
+  )
+
   if (!no.plot) plot.diffnet_hr(x, include.grid=include.grid, ...)
   invisible(x)
+
 }
 
 #' @rdname hazard_rate
@@ -687,7 +836,7 @@ plot.diffnet_hr <- function(x,y=NULL, main="Hazard Rate", xlab="Time",
 #' @export
 #' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 threshold <- function(obj, toa, t0=min(toa, na.rm = TRUE), include_censored=FALSE,
-                      lags=0L, ...) {
+                       lags=0L, ...) {
 
   if (inherits(obj, "diffnet")) {
     t0 <- min(obj$meta$pers)
@@ -704,14 +853,15 @@ threshold <- function(obj, toa, t0=min(toa, na.rm = TRUE), include_censored=FALS
   toa <- toa - lags
   toa[(toa < 1) | (toa > ncol(obj))] <- NA
 
-  output <- threshold_cpp(obj, toa, include_censored)
-  # dimnames(output) <- list(rownames(obj), "threshold")
-  structure(output, dim=c(length(toa), 1), dimnames=list(rownames(obj), "threshold"))
+  ans <- structure(obj[cbind(1:length(toa),toa)], dim=c(length(toa),1),
+            dimnames=list(rownames(obj), "threshold"))
 
-  # # Correcting weird cases
-  # if (!include_censored) output[toa==1] <- NA
-  # output[is.na(toa)] <- NA
-  # output
+  # Checking if whether to included censored or not
+  if (include_censored) return(ans)
+  else {
+    ans[which(is.na(toa))] <- NA
+    return(ans)
+  }
 }
 
 #' Classify adopters accordingly to Time of Adoption and Threshold levels.
@@ -808,11 +958,17 @@ classify_adopters.diffnet <- function(graph, include_censored=FALSE, ...) {
 
 #' @export
 #' @rdname classify_adopters
-classify_adopters.default <- function(graph, toa,
-                                      t0=NULL,
-                                      t1=NULL,
-                                      expo=NULL,
-                                      include_censored=FALSE, ...) {
+classify_adopters.default <- function(
+  graph,
+  toa,
+  t0=NULL,
+  t1=NULL,
+  expo=NULL,
+  include_censored=FALSE,
+  ...
+  ) {
+
+
   # Computing ranges
   ran_toa <- mean(toa, na.rm = TRUE) + sd(toa, na.rm = TRUE)*c(-1,0,1)
 
@@ -822,11 +978,11 @@ classify_adopters.default <- function(graph, toa,
   ran_thr <- mean(thr, na.rm = TRUE) + sd(thr, na.rm = TRUE)*c(-1,0,1)
 
   # Classifying
-  c_toa <- c("Early Adopters", "Early Majority", "Late Majority", "Laggards")
-  c_toa <- factor(findInterval(toa, ran_toa), 0:3, c_toa)
+  c_toa <- c("Non-Adopters", "Early Adopters", "Early Majority", "Late Majority", "Laggards")
+  c_toa <- factor(findInterval(toa, ran_toa), c(NA,0:3), c_toa, exclude=NULL)
 
-  c_thr <- c("Very Low Thresh.", "Low Thresh.", "High Thresh.", "Very High Thresh.")
-  c_thr <- factor(findInterval(thr, ran_thr), 0:3, c_thr)
+  c_thr <- c("Non-Adopters", "Very Low Thresh.", "Low Thresh.", "High Thresh.", "Very High Thresh.")
+  c_thr <- factor(findInterval(thr, ran_thr), c(NA,0:3), c_thr, exclude=NULL)
 
   structure(list(
     toa=c_toa,
@@ -840,13 +996,10 @@ classify_adopters.default <- function(graph, toa,
 #' @export
 #' @param as.pcent Logical scalar. When \code{TRUE} returns a table with percentages
 #' instead.
-#' @param addNA Logical scalar. When \code{TRUE} add an additional factor, \code{NA},
-#' to the values returned by \code{classify}.
 #' @param digits Integer scalar. Passed to \code{\link[base:round]{round}}.
 #' @rdname classify_adopters
-ftable.diffnet_adopters <- function(x, as.pcent=TRUE, addNA=TRUE, digits=2, ...) {
-  if (addNA)
-    x <- lapply(x[1:2], addNA)
+ftable.diffnet_adopters <- function(x, as.pcent=TRUE, digits=2, ...) {
+
   out <- with(x, stats::ftable(toa, thr, ...))
 
   if (as.pcent) round(out/sum(out)*100, digits)
@@ -872,4 +1025,99 @@ plot.diffnet_adopters <- function(x, y = NULL,
   y <- do.call(ftable.diffnet_adopters, c(ftable.args, list(x=x)))
   y <- do.call(as.table, c(table.args, list(x=y)))
   plot(y, ...)
+}
+
+#' Computes covariate distance between connected vertices
+#'
+#' @param graph A square matrix of size \eqn{n} of class dgCMatrix.
+#' @param X A numeric matrix of size \eqn{n \times K}{n * K}. Vertices attributes
+#' @param p Numeric scalar. Norm to compute
+#' @param S Square matrix of size \code{ncol(x)}. Usually the var-covar matrix.
+#' @details
+#'
+#' Faster than \code{\link{dist}}, these functions compute distance metrics
+#' between pairs of vertices that are connected (otherwise skip).
+#'
+#' The function \code{vertex_covariate_dist} is the simil of \code{\link{dist}}
+#' and returns p-norms. It is implemented as follows (for each pair of vertices):
+#'
+#' \deqn{%
+#' D_{ij} = \left(\sum_{k=1}^K (X_{ik} - X_{jk})^{p} \right)^{1/p}\mbox{ if }graph_{i,j}\neq 0
+#' }{%
+#' D(i,j) = [\sum_k (X(i,k) - X(j,k))^p]^(1/p)  if graph(i,j) != 0
+#' }
+#'
+#' In the case of mahalanobis distance, for each pair of vertex \eqn{(i,j)}, the
+#' distance is computed as follows:
+#'
+#' \deqn{%
+#' D_{ij} = \left( (X_i - X_j)\times S \times (X_i - X_j)' \right)^{1/2}\mbox{ if }graph_{i,j}\neq 0
+#' }{%
+#' D(i,j) = sqrt[(X(i) - X(j)) \%*\% S  \%*\% t(X(i) - X(j))]  if graph(i,j) != 0
+#' }
+#'
+#' @return A matrix of size \eqn{n\times n}{n * n} of class \code{dgCMatrix}. Will
+#' be symmetric only if \code{graph} is symmetric.
+#'
+#' @export
+#' @examples
+#' # Distance (aka p norm) -----------------------------------------------------
+#' set.seed(123)
+#' G <- rgraph_ws(20, 4, .1)
+#' X <- matrix(runif(40), ncol=2)
+#'
+#' vertex_covariate_dist(G, X)
+#'
+#' # Mahalanobis distance ------------------------------------------------------
+#' S <- var(X)
+#'
+#' M <- vertex_mahalanobis_dist(G, X, S)
+#'
+#' # Example with diffnet objects ----------------------------------------------
+#'
+#' data(medInnovationsDiffNet)
+#' X <- cbind(
+#'   medInnovationsDiffNet[["proage"]],
+#'   medInnovationsDiffNet[["attend"]]
+#' )
+#'
+#' S <- var(X, na.rm=TRUE)
+#' ans <- vertex_mahalanobis_dist(medInnovationsDiffNet, X, S)
+#'
+#' @name vertex_covariate_dist
+#' @references
+#' Mahalanobis distance. (2016, September 27). In Wikipedia, The Free Encyclopedia.
+#' Retrieved 20:31, September 27, 2016, from
+#' \url{https://en.wikipedia.org/w/index.php?title=Mahalanobis_distance&oldid=741488252}
+#' @author George G. Vega Yon
+#' @aliases p-norm mahalanobis
+#' @family statistics
+#' @seealso \code{\link[stats:mahalanobis]{mahalanobis}} in the stats package.
+NULL
+
+#' @export
+#' @rdname vertex_covariate_dist
+vertex_mahalanobis_dist <- function(graph, X, S) {
+
+  # Analyzing
+  cls <- class(graph)
+  ans <- if ("matrix" %in% cls) {
+    vertex_mahalanobis_dist_cpp(methods::as(graph, "dgCMatrix"), X, S)
+  } else if ("dgCMatrix" %in% cls) {
+    vertex_mahalanobis_dist_cpp(graph, X, S)
+  } else if ("diffnet" %in% cls) {
+
+    # Checking sizes
+    if (!inherits(S, "list")) S <- lapply(1:nslices(graph), function(x) S)
+    if (inherits(X, "character")) {
+      X <- lapply(1:nslices(graph), function(x) cbind(as.matrix(graph[[X]])))
+    }
+    if (!inherits(X, c("list"))) {
+      X <- lapply(1:nslices(graph), function(x) as.matrix(X))
+    }
+
+    with(graph, Map(function(g, x, s) vertex_mahalanobis_dist(g,x,s), g=graph, x=X, s=S))
+  }
+
+  return(ans)
 }

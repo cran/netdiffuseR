@@ -3,13 +3,16 @@
 #' Changes the structure of a graph by altering ties.
 #'
 #' @inheritParams rgraph_ws
+#' @templateVar undirected TRUE
+#' @template graph_template
 #' @param p Either a [0,1] vector with rewiring probabilities (\code{algorithm="endpoints"}),
 #' or an integer vector with number of iterations (\code{algorithm="swap"}).
-#' @param undirected Logical scalar. \code{TRUE} when the graph is undirected.
-#' @param graph Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}})
 #' @param copy.first Logical scalar. When \code{TRUE} and \code{graph} is dynamic uses
 #' the first slice as a baseline for the rest of slices (see details).
+#' @param pr.change Numeric scalar. Probability ([0,1]) of doing a rewire (see details).
 #' @param algorithm Character scalar. Either \code{"swap"} or \code{"endpoints"}.
+#' @param althexagons Logical scalar. When \code{TRUE} uses the compact alternating
+#' hexagons algorithm (currently ignored [on development]).
 #' @details
 #' Both algorithms are implemented sequentially, this is, edge-wise checking
 #' self edges and multiple edges over the changing graph; in other words, at step
@@ -60,9 +63,10 @@
 #'
 #' Let \eqn{E} be the set of edges of the graph \eqn{G}. For \eqn{i=1} to \eqn{p}, do:
 #' \enumerate{
+#'  \item With probability \code{1-pr.change} got to the last step.
 #'  \item Choose \eqn{e0=(a, b)} from \eqn{E}. If \code{!self & a == b} then go to the last step.
 #'  \item Choose \eqn{e1=(c, d)} from \eqn{E}. If \code{!self & c == d } then go to the last step.
-#'  \item Define \eqn{e0'=(a, d)} and \eqn{e1' = (c, b)}. If \code{!multiple & [G[e0']!= 0 | G[e1'] != 0]} then go to the last step.
+#'  \item Define \eqn{e0'=(a, d)} and \eqn{e1' = (c, b)}. If \code{!multiple & [G[e0']!= 0 | G[e1'] != 0]} then go to the last step.(*)
 #'  \item Define \eqn{v0 = G[e0]} and \eqn{v1 = G[e1]}, set \eqn{G[e0]=0} and \eqn{G[e1]=0}
 #'  (and the same to the diagonally opposed coordinates in the case of undirected graphs)
 #'  \item Set \eqn{G[e0'] = v0} and \eqn{G[e1'] = v1} (and so with the diagonally opposed coordinates
@@ -70,9 +74,27 @@
 #'  \item Next i.
 #' }
 #'
-#' Milo et al. (2004) suggests that in order for the rewired graph to be independent
+#' (*) When \code{althexagons=TRUE}, the algorithm changes and applies what Rao et al.
+#' (1996) describe as Compact Alternating Hexagons. This modification assures the
+#' algorithm to be able to achieve any structure. The algorithm consists on doing
+#' the following swapping: \eqn{(i1i2,i1i3,i2i3,i2i1,i3i1,i3i2)} with values
+#' \eqn{(1,0,1,0,1,0)} respectively with \eqn{i1!=i2!=i3}. See the examples and
+#' references.
+#'
+#' In Milo et al. (2004) is suggested that in order for the rewired graph to be independent
 #' from the original one researchers usually iterate around \code{nlinks(graph)*100}
-#' times, so \code{p=nlinks(graph)*100} is recommended.
+#' times, so \code{p=nlinks(graph)*100}. On the other hand in Ray et al (2012)
+#' it is shown that in order to achive such it is needed to perform
+#' \code{nlinks(graph)*log(1/eps)}, where \code{eps}\eqn{\sim}1e-7, in other words,
+#' around \code{nlinks(graph)*16}. We set the default to be 20.
+#'
+#' In the case of Markov chains, the variable \code{pr.change} allows making the
+#' algorithm aperiodic. This is relevant only if the
+#' probability self-loop to a particular state is null, for example, if
+#' we set \code{self=TRUE} and \code{muliple=TRUE}, then in every step the
+#' algorithm will be able to change the state. For more details see
+#' Stanton and Pinar (2012) [p. 3.5:9].
+#'
 #'
 #' @section \emph{Endpoints} algorithm:
 #'
@@ -107,6 +129,24 @@
 #' (2004). On the uniform generation of random graphs with prescribed degree sequences.
 #' Arxiv Preprint condmat0312028, cond-mat/0, 1–4. Retrieved from
 #' \url{http://arxiv.org/abs/cond-mat/0312028}
+#'
+#' Ray, J., Pinar, A., and Seshadhri, C. (2012).
+#' Are we there yet? When to stop a Markov chain while generating random graphs.
+#' pages 1–21.
+#'
+#' Ray, J., Pinar, A., & Seshadhri, C. (2012). Are We There Yet? When to Stop a
+#' Markov Chain while Generating Random Graphs. In A. Bonato & J. Janssen (Eds.),
+#' Algorithms and Models for the Web Graph (Vol. 7323, pp. 153–164).
+#' Berlin, Heidelberg: Springer Berlin Heidelberg.
+#' \url{http://doi.org/10.1007/978-3-642-30541-2}
+#'
+#' A . Ramachandra Rao, R. J. and S. B. (1996). A Markov Chain Monte Carlo Method
+#' for Generating Random ( 0 , 1 ) -Matrices with Given Marginals. The Indian
+#' Journal of Statistics, 58, 225–242.
+#'
+#' Stanton, I., & Pinar, A. (2012). Constructing and sampling graphs with a
+#' prescribed joint degree distribution. Journal of Experimental Algorithmics,
+#' 17(1), 3.1. \url{http://doi.org/10.1145/2133803.2330086}
 #'
 #' @family simulation functions
 #' @export
@@ -144,30 +184,58 @@
 #' baseline <- paste0(as.vector(x), collapse="")
 #' points(x=7,y=table(as.factor(w))[baseline]/nsim*100, pch=3, col="red")
 #'
+# ' # Compact Alternating Hexagons ----------------------------------------------
+# ' x <- matrix(c(0,0,1,1,0,0,0,1,0), ncol=3, nrow=3)
+# '
+# ' set.seed(123)
+# ' nsim <- 1e4
+# ' w <- sapply(seq_len(nsim), function(y) {
+# '  g <- rewire_graph(x,p=nlinks(x)*20, algorithm = "swap", althexagons=TRUE)
+# '  paste0(as.vector(g), collapse="")
+# ' })
+# '
+# ' # Counting
+# ' coded <- as.integer(as.factor(w))
+# '
+# ' plot(table(coded)/nsim*100, type="p", ylab="Frequency %", xlab="Class of graph", pch=3,
+# ' main="Distribution of classes generated by rewiring")
+# '
+# ' # Marking the original structure
+# ' baseline <- paste0(as.vector(x), collapse="")
+# ' points(x=7,y=table(as.factor(w))[baseline]/nsim*100, pch=3, col="red")
 rewire_graph <- function(graph, p,
                          algorithm="endpoints",
                          both.ends=FALSE, self=FALSE, multiple=FALSE,
                          undirected=getOption("diffnet.undirected"),
-                         copy.first=TRUE) {
+                         pr.change= ifelse(self, 0.5, 1),
+                         copy.first=TRUE, althexagons=FALSE) {
 
   # Checking undirected (if exists)
   checkingUndirected(graph)
 
+  # althexagons is still on development
+  if (althexagons) {
+    althexagons <- FALSE
+    warning("The option -althexagons- is still on development. So it has been set to FALSE.")
+  }
+
   # Checking copy.first
   # if (missing(copy.first)) copy.first <- FALSE
 
-  out <- switch(class(graph),
-                dgCMatrix = rewire_graph.dgCMatrix(graph, p, algorithm, both.ends, self, multiple, undirected),
-                list = rewire_graph.list(graph, p, algorithm, both.ends, self, multiple, undirected, copy.first),
-                matrix = rewire_graph.dgCMatrix(
-                  methods::as(graph, "dgCMatrix"), p, algorithm, both.ends, self, multiple, undirected),
-                diffnet = {
-                  rewire_graph.list(graph$graph, p, algorithm, both.ends, self, multiple,
-                                    graph$meta$undirected, copy.first)
-                },
-                array = rewire_graph.array(graph, p, algorithm, both.ends, self, multiple, undirected, copy.first),
-                stopifnot_graph(graph)
-  )
+  cls <- class(graph)
+  out <- if ("dgCMatrix" %in% cls) {
+    rewire_graph.dgCMatrix(graph, p, algorithm, both.ends, self, multiple, undirected, pr.change, althexagons)
+  } else if ("list" %in% cls) {
+    rewire_graph.list(graph, p, algorithm, both.ends, self, multiple, undirected, pr.change, copy.first, althexagons)
+  } else if ("matrix" %in% cls) {
+    rewire_graph.dgCMatrix(
+      methods::as(graph, "dgCMatrix"), p, algorithm, both.ends, self, multiple, undirected, pr.change, althexagons)
+  } else if ("diffnet" %in% cls) {
+    rewire_graph.list(graph$graph, p, algorithm, both.ends, self, multiple,
+                      graph$meta$undirected, pr.change, copy.first, althexagons)
+  } else if ("array" %in% cls) {
+    rewire_graph.array(graph, p, algorithm, both.ends, self, multiple, undirected, pr.change, copy.first, althexagons)
+  } else stopifnot_graph(graph)
 
   # If diffnet, then it must return the same object but rewired, and change
   # the attribute of directed or not
@@ -184,7 +252,7 @@ rewire_graph <- function(graph, p,
 
 # @rdname rewire_graph
 rewire_graph.list <- function(graph, p, algorithm, both.ends, self, multiple, undirected,
-                              copy.first) {
+                              pr.change, copy.first, althexagons) {
   t   <- length(graph)
   out <- graph
 
@@ -205,7 +273,7 @@ rewire_graph.list <- function(graph, p, algorithm, both.ends, self, multiple, un
     out[[i]] <- if (algorithm == "endpoints")
       rewire_endpoints(out[[j]], p[i], both.ends, self, multiple, undirected)
     else if (algorithm == "swap")
-      rewire_swap(out[[j]], p[i], self, multiple, undirected)
+      rewire_swap(out[[j]], p[i], self, multiple, undirected, pr.change) #, althexagons)
     else stop("No such rewiring algorithm: ", algorithm)
 
     # Names
@@ -218,11 +286,11 @@ rewire_graph.list <- function(graph, p, algorithm, both.ends, self, multiple, un
 }
 
 # @rdname rewire_graph
-rewire_graph.dgCMatrix <- function(graph, p, algorithm, both.ends, self, multiple, undirected) {
+rewire_graph.dgCMatrix <- function(graph, p, algorithm, both.ends, self, multiple, undirected, pr.change, althexagons) {
   out <- if (algorithm == "endpoints")
     rewire_endpoints(graph, p, both.ends, self, multiple, undirected)
   else if (algorithm == "swap")
-    rewire_swap(graph, p, self, multiple, undirected)
+    rewire_swap(graph, p, self, multiple, undirected, pr.change) #, althexagons)
   else stop("No such rewiring algorithm: ", algorithm)
 
   rn <- rownames(out)
@@ -233,7 +301,7 @@ rewire_graph.dgCMatrix <- function(graph, p, algorithm, both.ends, self, multipl
 
 # @rdname rewire_graph
 rewire_graph.array <-function(graph, p, algorithm, both.ends, self, multiple, undirected,
-                              copy.first) {
+                              pr.change, copy.first, althexagons) {
   n   <- dim(graph)[1]
   t   <- dim(graph)[3]
   out <- apply(graph, 3, methods::as, Class="dgCMatrix")
@@ -257,7 +325,7 @@ rewire_graph.array <-function(graph, p, algorithm, both.ends, self, multiple, un
         out[[j]], p[i], both.ends, self, multiple, undirected)
     } else if (algorithm == "swap") {
       rewire_swap(
-        out[[j]], p[i], self, multiple, undirected)
+        out[[j]], p[i], self, multiple, undirected, pr.change) #, althexagons)
     } else stop("No such rewiring algorithm: ", algorithm)
 
     rn <- rownames(graph[,,i])
@@ -268,3 +336,128 @@ rewire_graph.array <-function(graph, p, algorithm, both.ends, self, multiple, un
 
   out
 }
+
+#' Permute the values of a matrix
+#'
+#' \code{permute_graph} Shuffles the values of a matrix either considering
+#' \emph{loops} and \emph{multiple} links (which are processed as cell values
+#' different than 1/0). \code{rewire_qap} generates a new graph \code{graph}\eqn{'}
+#' that is isomorphic to \code{graph}.
+#' @templateVar self TRUE
+#' @templateVar multiple TRUE
+#' @template graph_template
+#' @author George G. Vega Yon
+#' @return A permuted version of \code{graph}.
+#' @examples
+#' # Simple example ------------------------------------------------------------
+#' set.seed(1231)
+#' g <- rgraph_ba(t=9)
+#' g
+#'
+#' # These preserve the density
+#' permute_graph(g)
+#' permute_graph(g)
+#'
+#' # These are isomorphic to g
+#' rewire_qap(g)
+#' rewire_qap(g)
+#'
+#' @references
+#'
+#' Anderson, B. S., Butts, C., & Carley, K. (1999). The interaction of size and
+#' density with graph-level indices. Social Networks, 21(3), 239–267.
+#' \url{http://dx.doi.org/10.1016/S0378-8733(99)00011-8}
+#'
+#' Mantel, N. (1967). The detection of disease clustering and a generalized
+#' regression approach. Cancer Research, 27(2), 209–20.
+#' \url{https://doi.org/10.1038/212665a0}
+#'
+#' @seealso This function can be used as null distribution in \code{struct_test}
+#' @family simulation functions
+#' @export
+#' @aliases CUG QAP
+permute_graph <- function(graph, self=FALSE, multiple=FALSE) {
+
+  # Changing class
+  cls <- class(graph)
+  x <- if ("matrix" %in% cls) methods::as(graph, "dgCMatrix")
+  else if ("list" %in% cls) lapply(graph, methods::as, Class="dgCMatrix")
+  else if ("diffnet" %in% cls) graph$graph
+  else if ("array" %in% cls) apply(graph, 3, methods::as, Class="dgCMatrix")
+  else if ("dgCMatrix" %in% cls) graph
+  else stopifnot_graph(graph)
+
+  if (any(c("list", "array") %in% cls)) {
+    ans <- lapply(x, permute_graph_cpp, self=self, multiple=multiple)
+
+  } else if ("diffnet" %in% cls) {
+    ans <- graph
+    ans$graph <- lapply(x, permute_graph_cpp, self=self, multiple=multiple)
+  } else {
+    ans <- permute_graph_cpp(x, self, multiple)
+  }
+
+  return(ans)
+
+}
+
+#' @export
+#' @rdname permute_graph
+rewire_permute <- permute_graph
+
+#' @export
+#' @rdname permute_graph
+rewire_qap <- function(graph) {
+
+  neword <- order(runif(nnodes(graph)))
+  rewirefun <- function(graph) {
+    graph[neword, neword]
+  }
+
+  # Changing class
+  cls <- class(graph)
+  x <- if ("matrix" %in% cls) methods::as(graph, "dgCMatrix")
+  else if ("list" %in% cls) lapply(graph, methods::as, Class="dgCMatrix")
+  else if ("diffnet" %in% cls) graph$graph
+  else if ("array" %in% cls) apply(graph, 3, methods::as, Class="dgCMatrix")
+  else if ("dgCMatrix" %in% cls) graph
+  else stopifnot_graph(graph)
+
+  if (any(c("diffnet", "list", "array") %in% cls)) {
+
+    ans <- lapply(x, rewirefun)
+
+    if (inherits(graph, "diffnet")) {
+      # Naming
+      neword <- match(neword, nodes(graph))
+
+      graph$graph <- ans
+      graph$graph <- lapply(graph$graph, Matrix::unname)
+      graph$meta$ids <- graph$meta$ids[neword]
+
+      # Attributes
+      if (nrow(graph$vertex.static.attrs)) {
+        graph$vertex.static.attrs <- graph$vertex.static.attrs[neword,,drop=FALSE]
+      }
+      if (nrow(graph$vertex.dyn.attrs[[1]])) {
+        graph$vertex.dyn.attrs <- lapply(graph$vertex.dyn.attrs, function(y) {
+          y[neword,,drop=FALSE]
+        })
+      }
+
+      # Adoptions
+      graph$cumadopt <- graph$cumadopt[neword,,drop=FALSE]
+      graph$adopt    <- graph$adopt[neword,,drop=FALSE]
+      graph$toa      <- graph$toa[neword]
+
+      return(graph)
+    }
+
+
+  } else {
+    ans <- rewirefun(x)
+  }
+
+  return(ans)
+}
+

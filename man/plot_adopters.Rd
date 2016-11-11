@@ -45,7 +45,7 @@ plot_adopters(obj, freq = FALSE, what = c("adopt", "cumadopt"),
 \item{...}{Further arguments passed to \code{\link{matplot}}.}
 }
 \value{
-List of matrices as described in \code{\link{cumulative_adopt_count}}
+A matrix as described in \code{\link{cumulative_adopt_count}}.
 }
 \description{
 Visualize adopters and cumulative adopters
@@ -66,9 +66,11 @@ plot_adopters(mat$cumadopt)
 George G. Vega Yon
 }
 \seealso{
-Other visualizations: \code{\link{diffusionMap}},
-  \code{\link{drawColorKey}}, \code{\link{hazard_rate}},
-  \code{\link{plot_diffnet2}}, \code{\link{plot_diffnet}},
+Other visualizations: \code{\link{dgr}},
+  \code{\link{diffusionMap}}, \code{\link{drawColorKey}},
+  \code{\link{grid_distribution}},
+  \code{\link{hazard_rate}}, \code{\link{plot_diffnet2}},
+  \code{\link{plot_diffnet}},
   \code{\link{plot_infectsuscep}},
   \code{\link{plot_threshold}},
   \code{\link{rescale_vertex_igraph}}

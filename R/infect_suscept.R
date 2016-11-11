@@ -1,15 +1,15 @@
 #' Susceptibility and Infection
 #'
 #' Calculates infectiousness and susceptibility for each node in the graph
-#'
-#' @param graph A dynamic graph (see \code{\link{netdiffuseR-graphs}}).
-#' @param toa Integer vector with times of adoption (see details)
+#' @templateVar dynamic TRUE
+#' @templateVar toa TRUE
+#' @templateVar valued TRUE
+#' @template graph_template
 #' @param t0 Integer scalar. See \code{\link{toa_mat}}.
 #' @param normalize Logical. Whether or not to normalize the outcome
 #' @param K Integer scalar. Number of time periods to consider
 #' @param r Numeric scalar. Discount rate used when \code{expdiscount=TRUE}
 #' @param expdiscount Logical scalar. When TRUE, exponential discount rate is used (see details).
-#' @param valued Logical scalar. When FALSE non-zero values in the adjmat are set to one.
 #' @param outgoing Logical scalar. When \code{TRUE}, computed using outgoing ties.
 #' @family statistics
 #' @aliases susceptibility
@@ -77,14 +77,15 @@
 #'
 #' @references
 #' Thomas W. Valente, Stephanie R. Dyal, Kar-Hai Chu, Heather Wipfli, Kayo
-#' Fujimoto, Diffusion of innovations theory applied to global tobacco control
+#' Fujimoto Diffusion of innovations theory applied to global tobacco control
 #' treaty ratification, Social Science & Medicine, Volume 145, November 2015,
 #' Pages 89-97, ISSN 0277-9536
-#' (\url{http://dx.doi.org/10.1016/j.socscimed.2015.10.001})
+#' \url{http://dx.doi.org/10.1016/j.socscimed.2015.10.001}
 #'
-#' Myers, D. J. (2000). "The Diffusion of Collective Violence: Infectiousness,
-#' Susceptibility, and Mass Media Networks". American Journal of Sociology, 106(1),
-#' 173–208. doi:10.1086/303110
+#' Myers, D. J. (2000). The Diffusion of Collective Violence: Infectiousness,
+#' Susceptibility, and Mass Media Networks. American Journal of Sociology, 106(1),
+#' 173–208. \url{https://doi.org/10.1086/303110}
+#'
 #' @examples
 #'
 #' # Creating a random dynamic graph

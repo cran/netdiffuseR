@@ -27,14 +27,14 @@ alter -target- (see details).}
 \item{t}{Integer scalar. Repeat the network \code{t} times (if no \code{t0,t1} are provided).}
 
 \item{simplify}{Logical scalar. When TRUE and \code{times=NULL} it will return an adjacency
-matrix, otherwise an array of adjacency matrices.}
-
-\item{undirected}{Logical scalar. TRUE when the graph is undirected.}
-
-\item{self}{Logical scalar. TRUE when self edges are excluded.}
-
-\item{multiple}{Logical scalar. TRUE when multiple edges should not be included
+matrix, otherwise an array of adjacency matrices.
 (see details).}
+
+\item{undirected}{Logical scalar. When \code{TRUE} only the lower triangle will be processed.}
+
+\item{self}{Logical scalar. When \code{TRUE} allows loops (self edges).}
+
+\item{multiple}{Logical scalar. When \code{TRUE} allows multiple edges.}
 
 \item{keep.isolates}{Logical scalar. When FALSE, rows with \code{NA/NULL} values
 (isolated vertices unless have autolink) will be droped (see details).}
@@ -145,7 +145,8 @@ George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 }
 \seealso{
 Other data management functions: \code{\link{as_diffnet}},
-  \code{\link{isolated}}, \code{\link{survey_to_diffnet}}
+  \code{\link{egonet_attrs}}, \code{\link{isolated}},
+  \code{\link{survey_to_diffnet}}
 }
 \keyword{manip}
 

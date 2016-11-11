@@ -10,7 +10,7 @@ plot_threshold(graph, expo, toa, include_censored = FALSE, t0 = min(toa,
   xlab = "Time", ylab = "Threshold", vertex.cex = "degree",
   vertex.col = rgb(0.3, 0.3, 0.8, 0.5), vertex.label = "",
   vertex.lab.pos = NULL, vertex.lab.cex = 1, vertex.lab.adj = c(0.5, 0.5),
-  vertex.lab.col = rgb(0.3, 0.3, 0.8, 0.9), vertex.sides = 40,
+  vertex.lab.col = rgb(0.3, 0.3, 0.8, 0.9), vertex.sides = 40L,
   vertex.rot = 0, edge.width = 2, edge.col = rgb(0.6, 0.6, 0.6, 0.1),
   arrow.length = 0.2, include.grid = TRUE, bty = "n",
   vertex.bcol = vertex.col, jitter.factor = c(1, 0),
@@ -21,7 +21,7 @@ plot_threshold(graph, expo, toa, include_censored = FALSE, t0 = min(toa,
 
 \item{expo}{\eqn{n\times T}{n * T} matrix. Esposure to the innovation obtained from \code{\link{exposure}}}
 
-\item{toa}{Integer vector of size \eqn{n}. Times of Adoption}
+\item{toa}{Integer vector of length \eqn{n} with the times of adoption.}
 
 \item{include_censored}{Logical scalar. Passed to \code{\link{threshold}}.}
 
@@ -29,7 +29,7 @@ plot_threshold(graph, expo, toa, include_censored = FALSE, t0 = min(toa,
 
 \item{attrs}{Passed to \code{\link{exposure}} (via threshold).}
 
-\item{undirected}{Logical scalar.}
+\item{undirected}{Logical scalar. When \code{TRUE} only the lower triangle will be processed.}
 
 \item{no.contemporary}{Logical scalar. When TRUE, edges for vertices with the same
 \code{toa} won't be plotted.}
@@ -121,10 +121,11 @@ George G. Vega Yon
 Use \code{\link{threshold}} to retrieve the corresponding threshold
 obtained returned by \code{\link{exposure}}.
 
-Other visualizations: \code{\link{diffusionMap}},
-  \code{\link{drawColorKey}}, \code{\link{hazard_rate}},
-  \code{\link{plot_adopters}}, \code{\link{plot_diffnet2}},
-  \code{\link{plot_diffnet}},
+Other visualizations: \code{\link{dgr}},
+  \code{\link{diffusionMap}}, \code{\link{drawColorKey}},
+  \code{\link{grid_distribution}},
+  \code{\link{hazard_rate}}, \code{\link{plot_adopters}},
+  \code{\link{plot_diffnet2}}, \code{\link{plot_diffnet}},
   \code{\link{plot_infectsuscep}},
   \code{\link{rescale_vertex_igraph}}
 }

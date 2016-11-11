@@ -35,7 +35,7 @@ double angle(double x0, double y0, double x1, double y1) {
   // Computing distances and angles
   double xdist = x1 - x0;
   double ydist = y1 - y0;
-  double alpha = atan(ydist/(xdist)+1e-15);
+  double alpha = atan(ydist/(xdist+1e-15));
 
   // Setting cases
   if      ((xdist < 0) && (ydist > 0)) return(alpha + PI);
@@ -86,4 +86,60 @@ int unif_rand_w_exclusion(int n, int e) {
     if (num >= e) ++num;
   }
   return(num);
+}
+
+
+// [[Rcpp::export]]
+arma::sp_mat sp_as_undirected(const arma::sp_mat & x) {
+  // Getting start-end
+  arma::sp_mat::const_iterator start = x.begin();
+  arma::sp_mat::const_iterator end   = x.end();
+
+  // Empty mat
+  arma::sp_mat newx(x);
+
+  for (arma::sp_mat::const_iterator it = start; it != end; ++it) {
+    int i = it.row();
+    int j = it.col();
+    newx.at(j,i) = *it;
+  }
+
+  return newx;
+}
+
+typedef double (*funcPtr)(double y0, double y1);
+
+double st_dist(double y0, double y1) {return fabs(y0-y1);}
+double st_quaddist(double y0, double y1) {return pow(y0-y1, 2.0);}
+double st_greater(double y0, double y1) {return (double) (y0 > y1);}
+double st_greaterequal(double y0, double y1) {return (double) (y0 >= y1);}
+double st_smaller(double y0, double y1) {return (double) (y0 < y1);}
+double st_smallerequal(double y0, double y1) {return (double) (y0 <= y1);}
+double st_equal(double y0, double y1) {return (double) (y0 == y1);}
+
+// XPtr<funcPtr> st_getfun(std::string funname) {
+void st_getfun(std::string funname, funcPtr & fun) {
+  if      (funname == "distance")                           fun = &st_dist;
+  else if ((funname == "quaddist") | (funname == "^2"))       fun = &st_quaddist;
+  else if ((funname == "greater") | (funname == ">"))       fun = &st_greater;
+  else if ((funname == "greaterequal") | (funname == ">=")) fun =  &st_greaterequal;
+  else if ((funname == "smaller") | (funname == "<"))       fun =  &st_smaller;
+  else if ((funname == "smallerequal") | (funname == "<=")) fun =  &st_smallerequal;
+  else if ((funname == "equal") | (funname == "=="))        fun =  &st_equal;
+  else Rcpp::stop("Unkown function.");
+
+  return ;
+}
+
+// Removes cases of graph that are not complete in x
+NumericVector complete_cases_graph(arma::sp_mat & graph, const NumericVector & x) {
+  std::vector<double> ans;
+  int n = x.size();
+  for (int i =0;i<n;i++)
+    if (NumericVector::is_na(x[i])) {
+      graph.shed_col(i);
+      graph.shed_row(i);
+    } else ans.push_back(x[i]);
+
+  return wrap(ans);
 }

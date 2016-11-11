@@ -3,11 +3,14 @@
 \name{select_egoalter}
 \alias{adopt_changes}
 \alias{select_egoalter}
+\alias{summary.diffnet_adoptChanges}
 \title{Calculate the number of adoption changes between ego and alter.}
 \usage{
 select_egoalter(graph, adopt, period = NULL)
 
 adopt_changes(graph, adopt, period = NULL)
+
+\method{summary}{diffnet_adoptChanges}(object, ...)
 }
 \arguments{
 \item{graph}{A dynamic graph (see \code{\link{netdiffuseR-graphs}}).}
@@ -15,10 +18,15 @@ adopt_changes(graph, adopt, period = NULL)
 \item{adopt}{\eqn{n\times T}{n*T} matrix. Cumulative adoption matrix obtained from \code{\link{toa_mat}}.}
 
 \item{period}{Integer scalar. Optional to make the count for a particular period of time.}
+
+\item{object}{An object of class \code{diffnet_adoptChanges}.}
+
+\item{...}{Ignored.}
 }
 \value{
-An dataframe with \eqn{n\times (T-1)}{n * (T-1)} rows and
-\eqn{2 + 16\times 3}{2 + 16 * 3} columns. The column names are
+An object of class \code{diffnet_adoptChanges} and \code{data.frame}
+with \eqn{n\times (T-1)}{n * (T-1)} rows and \eqn{2 + 16\times 3}{2 + 16 * 3}
+columns. The column names are:
 \item{\code{time}}{Integer represting the time period}
 \item{\code{id}}{Node id}
 \item{\code{select_a_01}, \dots, \code{select_a_16}}{Number of new links classified
@@ -57,11 +65,13 @@ At the same time, number 12 means that ego adopted the innovation in \eqn{t}, bu
 alter had already adopted in \eqn{t-1} (so it has it in both, \eqn{t} and \eqn{t-1}).
 }
 \examples{
-# Simple example
+# Simple example ------------------------------------------------------------
 set.seed(1312)
 dn <- rdiffnet(20, 5, seed.graph="small-world")
 
-str(adopt_changes(dn))
+ans <- adopt_changes(dn)
+str(ans)
+summary(ans)
 }
 \author{
 George G. Vega Yon, Stephanie R. Dyal, Timothy B, Hayes, Thomas W. Valente

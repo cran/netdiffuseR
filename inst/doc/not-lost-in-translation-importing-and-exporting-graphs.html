@@ -181,6 +181,8 @@ diffnet &lt;-<span class="st"> </span><span class="kw">as_diffnet</span>(
 <span class="co"># Taking a look at the diffnet object</span>
 diffnet</code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
+#  Name               : Diffusion Network
+#  Behavior           : Unspecified
 #  # of nodes         : 9 (101, 102, 103, 104, 105, 201, 202, 205, ...)
 #  # of time periods  : 5 (1 - 5)
 #  Type               : directed
@@ -204,13 +206,19 @@ fakesurvey$id</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet2 &lt;-<span class="st"> </span><span class="kw">edgelist_to_diffnet</span>(
   <span class="dt">edgelist =</span> fakeEdgelist[,<span class="dv">1</span>:<span class="dv">2</span>], <span class="co"># Passed to edgelist_to_adjmat</span>
   <span class="dt">w        =</span> fakeEdgelist$value, <span class="co"># Passed to edgelist_to_adjmat</span>
-  <span class="dt">dat      =</span> fakesurvey,         <span class="co"># Data frame with -idvar- and -toavar-</span>
-  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,               <span class="co"># Name of the -idvar- in -dat-</span>
-  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,              <span class="co"># Name of the -toavar- in -dat-</span>
-  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>           <span class="co"># Passed to edgelist_to_adjmat   </span>
-)
-diffnet2</code></pre></div>
+  <span class="dt">dat      =</span> fakesurvey,        <span class="co"># Data frame with -idvar- and -toavar-</span>
+  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,              <span class="co"># Name of the -idvar- in -dat-</span>
+  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,             <span class="co"># Name of the -toavar- in -dat-</span>
+  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>          <span class="co"># Passed to edgelist_to_adjmat   </span>
+)</code></pre></div>
+<pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
+# Coercing -ego- into character.</code></pre>
+<pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
+# Coercing -alter- into character.</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet2</code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
+#  Name               : Diffusion Network
+#  Behavior           : Unspecified
 #  # of nodes         : 9 (101, 102, 103, 104, 105, 201, 202, 205, ...)
 #  # of time periods  : 5 (1 - 5)
 #  Type               : directed
@@ -274,6 +282,8 @@ diffnet_w_unsurveyed &lt;-<span class="st"> </span><span class="kw">survey_to_di
 )
 diffnet_w_unsurveyed</code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
+#  Name               : Diffusion Network
+#  Behavior           : Unspecified
 #  # of nodes         : 13 (101, 102, 103, 104, 105, 106, 201, 202, ...)
 #  # of time periods  : 5 (1 - 5)
 #  Type               : directed
@@ -295,6 +305,8 @@ diffnet_wo_unsurveyed &lt;-<span class="st"> </span><span class="kw">survey_to_d
 )
 diffnet_wo_unsurveyed</code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
+#  Name               : Diffusion Network
+#  Behavior           : Unspecified
 #  # of nodes         : 9 (101, 102, 103, 104, 105, 201, 202, 205, ...)
 #  # of time periods  : 5 (1 - 5)
 #  Type               : directed
@@ -308,6 +320,8 @@ diffnet_wo_unsurveyed</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">difference &lt;-<span class="st"> </span>diffnet_w_unsurveyed -<span class="st"> </span>diffnet_wo_unsurveyed
 difference</code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
+#  Name               : Diffusion Network
+#  Behavior           : Unspecified
 #  # of nodes         : 4 (106, 203, 204, 208)
 #  # of time periods  : 5 (1 - 5)
 #  Type               : directed
@@ -363,8 +377,14 @@ fakeDynEdgelist[<span class="dv">11</span>,<span class="st">&quot;value&quot;</s
 )</code></pre></div>
 <pre><code># Warning in check_var_class_and_coerce(x, dat, c(&quot;numeric&quot;, &quot;integer&quot;),
 # &quot;integer&quot;, : Coercing -time- into integer.</code></pre>
+<pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
+# Coercing -ego- into character.</code></pre>
+<pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
+# Coercing -alter- into character.</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet</code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
+#  Name               : Diffusion Network
+#  Behavior           : Unspecified
 #  # of nodes         : 9 (101, 102, 103, 104, 105, 201, 202, 205, ...)
 #  # of time periods  : 2 (1990 - 1991)
 #  Type               : directed

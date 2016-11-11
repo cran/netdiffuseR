@@ -299,8 +299,7 @@ diffnet_check_attr_class <- function(value, meta) {
       x <- as.data.frame(do.call(c, x))
       colnames(x) <- name
       return(x)
-    }
-    else return(x)
+    } else return(x)
 
   } else {
     stop("No dynamic or static attribute with such name.")
@@ -334,7 +333,7 @@ diffnet_check_attr_class <- function(value, meta) {
       tokeep <- colnames(x$vertex.dyn.attrs[[1]])
       tokeep <- tokeep[which(tokeep != i)]
       x$vertex.dyn.attrs <-
-        lapply(x$vertex.dyn.attrs, subset, select=tokeep)
+        lapply(x$vertex.dyn.attrs, function(y) subset(y, select=tokeep))
       return(x)
     } else {
 
@@ -355,6 +354,13 @@ diffnet_check_attr_class <- function(value, meta) {
       x$vertex.dyn.attrs[[l]][[i]][j] <- value[[l]]
   }
   x
+}
+
+.indexing <- function(i, ids) {
+
+  ans <- seq_len(length(ids))
+  names(ans) <- ids
+  ans[i]
 }
 
 #' @export
@@ -379,6 +385,11 @@ diffnet_check_attr_class <- function(value, meta) {
   # Slices
   if (missing(k)) k <- seq_len(x$meta$nper)
 
+  # Adding names
+  i <- .indexing(i, x$meta$ids)
+  j <- .indexing(j, x$meta$ids)
+  k <- .indexing(k, x$meta$pers)
+
   # Subsetting
   if (drop) return(lapply(x$graph[k], "[", i=i, j=j, drop=FALSE))
   else {
@@ -398,7 +409,7 @@ diffnet_check_attr_class <- function(value, meta) {
     x$toa                 <- x$toa[i]
 
     # 3.0: Attrubytes
-    x$meta$ids <- rownames(x$adopt)#x$meta$ids[i]
+    x$meta$ids <- x$meta$ids[i] #rownames(x$adopt)#x$meta$ids[i]
     x$meta$n   <- length(x$meta$ids)
 
     return(x)

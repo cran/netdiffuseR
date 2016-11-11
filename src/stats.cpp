@@ -18,197 +18,264 @@
 *******************************************************************************/
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+#include "netdiffuser_extra.h"
 
 using namespace Rcpp;
 
-/* cmode:
- *  0: Indegree
- *  1: Outdegree
- *  2: Degree
- */
+
+
+//' @export
+//' @rdname vertex_covariate_dist
 // [[Rcpp::export]]
-arma::colvec degree_cpp(
-    const arma::sp_mat & adjmat0, const int & cmode=2,
-    bool undirected=true, bool self=false, bool valued=false) {
+arma::sp_mat vertex_covariate_dist(const arma::sp_mat & graph,
+                                   const arma::mat & X,
+                                   double p = 2.0) {
 
-  if (cmode < 0 || cmode > 2) stop("Invalid degree");
+  // Creating objects
+  arma::sp_mat ans(graph.n_rows,graph.n_cols);
+  arma::sp_mat::const_iterator b = graph.begin();
+  arma::sp_mat::const_iterator e = graph.end();
 
-  // Checking if it is valued or not
-  int n = adjmat0.n_cols;
-  arma::sp_mat adjmat(n,n);
-  if (!valued) adjmat = arma::spones(adjmat0);
-  else adjmat = adjmat0;
+  // Iterating over elements of graph
+  int i,j;
+  for (arma::sp_mat::const_iterator iter = b; iter != e; iter++) {
 
-  // Calculating row/col sums
-  arma::sp_mat degree(adjmat.n_cols, 1);
-  if (cmode == 2) {
-    if (undirected) degree = sum(adjmat,0).t();
-    else degree = sum(adjmat,0).t() + sum(adjmat, 1);
+    i = iter.row();
+    j = iter.col();
+
+    ans.at(i,j) = pow(
+      arma::as_scalar((X.row(i) - X.row(j)) * (X.row(i) - X.row(j)).t()),
+      1/p
+    );
   }
-  else if (cmode == 0) degree = sum(adjmat, 0).t();
-  else if (cmode == 1) degree = sum(adjmat, 1);
 
-  // Checking if self or not
-  arma::mat loop = arma::conv_to<arma::mat>::from(adjmat.diag());
-  if (!self) {
-    if (cmode == 2) {
-      if (!undirected) degree = degree - loop*2;
-      else             degree = degree - loop;
+  return ans;
+}
+
+// [[Rcpp::export]]
+arma::sp_mat vertex_mahalanobis_dist_cpp(const arma::sp_mat & graph,
+                                   const arma::mat & X,
+                                   const arma::mat & S) {
+
+  // Creating objects
+  arma::sp_mat ans(graph.n_rows,graph.n_cols);
+  arma::sp_mat::const_iterator b = graph.begin();
+  arma::sp_mat::const_iterator e = graph.end();
+
+  arma::mat Sinv = S.i();
+
+  // Iterating over elements of graph
+  int i,j;
+  for (arma::sp_mat::const_iterator iter = b; iter != e; iter++) {
+
+    i = iter.row();
+    j = iter.col();
+
+    ans.at(i,j) = pow(
+      arma::as_scalar((X.row(i) - X.row(j)) * Sinv * (X.row(i) - X.row(j)).t()),
+      0.5
+    );
+  }
+
+  return ans;
+}
+
+//' Comparisons at dyadic level
+//' @param graph A matrix of size \eqn{n\times n}{n*n} of class \code{dgCMatrix}.
+//' @param X A numeric vector of length \eqn{n}.
+//' @param funname Character scalar. Comparison to make (see details).
+//' @details
+//'
+//' This auxiliary function takes advantage of the sparcity of \code{graph} and
+//' applies a function in the form of \eqn{funname(x_i,x_j)}{funname(X[i],X[j])}
+//' only to \eqn{(i,j)} that have no empty entry. In other words, applies a compares
+//' elements of \code{X} only between vertices that have a link; making
+//' \code{nlinks(graph)} comparisons instead of looping through \eqn{n\times n}{n*n},
+//' which is much faster.
+//'
+//' \code{funname} can take any of the following values:
+//' \code{"distance"}, \code{"^2"} or \code{"quaddistance"}, \code{">"} or \code{"greater"},
+//' \code{"<"} or \code{"smaller"}, \code{">="} or \code{"greaterequal"},
+//' \code{"<="} or \code{"smallerequal"}, \code{"=="} or \code{"equal"}.
+//' @return A matrix \code{dgCMatrix} of size \eqn{n\times n}{n*n} with values in
+//' the form of \eqn{funname(x_i,x_j)}{funname(X[i],X[j])}.
+//' @examples
+//'
+//' # Basic example ------------------------------------------------------------
+//' set.seed(1313)
+//' G <- rgraph_ws(10, 4, .2)
+//' x <- rnorm(10)
+//'
+//' vertex_covariate_compare(G, x, "distance")
+//' vertex_covariate_compare(G, x, "^2")
+//' vertex_covariate_compare(G, x, ">=")
+//' vertex_covariate_compare(G, x, "<=")
+//' @export
+// [[Rcpp::export]]
+arma::sp_mat vertex_covariate_compare(const arma::sp_mat & graph, const NumericVector & X,
+                                      std::string funname) {
+
+  // Creating objects
+  arma::sp_mat ans(graph.n_rows,graph.n_cols);
+  arma::sp_mat::const_iterator b = graph.begin();
+  arma::sp_mat::const_iterator e = graph.end();
+
+  // Fetching function
+  funcPtr fun;
+  st_getfun(funname, fun);
+
+  // Iterating over elements of graph
+  for (arma::sp_mat::const_iterator iter = b; iter != e; iter++)
+    ans.at(iter.row(),iter.col()) = fun(X[iter.row()], X[iter.col()]);
+
+  return ans;
+}
+
+// [[Rcpp::export]]
+std::vector<double> moran_cpp(const arma::colvec & x, const arma::sp_mat & w) {
+  double xmean = mean(x);
+
+  int N = x.n_rows;
+
+  // Checking dims
+  if (w.n_cols != w.n_rows) stop("-w- is not a square matrix");
+  if (N != (int) w.n_cols) stop("-x- and -w- dimensions differ");
+
+  // Weights sum
+  double wsum = accu(w);
+
+  arma::colvec xcent = x - xmean;
+  double numer = accu((xcent * xcent.t()) % w);
+  double denom = accu(pow(xcent, 2.0));
+
+  /*/ Computing standard error
+  double s1, s2, s3, s4, s5;
+  arma::sp_mat::const_iterator b = w.begin();
+  arma::sp_mat::const_iterator e = w.end();
+
+  int i,j;
+  for (arma::sp_mat::const_iterator iter=b; iter!=e; ++iter) {
+  i = iter.col();
+  j = iter.row();
+
+  // Computing each count
+  if (i >= j) s1+= pow(w.at(i,j) + w.at(j,i),2.0);
+
+  }
+  s1 = sqrt(s1);
+
+  arma::colvec tmp(w.n_cols);
+  for (int i=0; i < (int) w.n_rows; i++)
+  tmp.at(i) = pow(accu(w.row(i)) + accu(w.col(i)), 2.0);
+
+  s2 = sum(tmp);
+
+  s3 = (1.0/N * accu(pow(xcent,4.0))) / pow(1.0/N * accu(pow(xcent,2.0)), 2.0);
+  s4 = (N*N - 3.0*N + 3.0)*s1 - N*s2 + 3.0 * wsum * wsum;
+  s5 = (N*N - N)*s1 - 2.0*N*s2 + 6.0*wsum*wsum;
+  */
+  std::vector<double> res(2);
+  res[0] = (x.size()/wsum)*(numer/(denom + 1e-15));
+
+  /*res[1] = (N*s4 - s3*s5)/((N - 1.0)*(N - 2.0)*(N - 3.0)*wsum*wsum) -
+   pow(-1.0/(N - 1.0), 2.0);*/
+  res[1] = 0;
+
+  return res;
+}
+
+
+// [[Rcpp::export]]
+List struct_equiv_cpp(
+    const arma::sp_mat & graph, // Must be a geodesic distances graph
+    double v = 1.0,
+    bool unscaled = false,
+    bool inv = false, double invrep = 0.0) {
+
+  int n = graph.n_cols;
+  if (graph.n_cols != graph.n_rows) stop("-graph- is not square.");
+
+  NumericMatrix d(n,n);
+
+  // Calculating Z vector as Z_i - Z_j = {z_ik - z_jk}
+  NumericVector dmax(n, -1e100);
+  for(int i=0;i<n;i++) {
+    for(int j=0;j<i;j++) {
+
+      // Computing sum(z_ik - z_jk)
+      double sumik = 0.0;
+      double sumki = 0.0;
+      for(int k=0;k<n;k++) {
+        // Summation accross all but i and j
+        if (k == i || k == j) continue;
+        sumik += pow(graph.at(i,k)-graph.at(j,k), 2.0);
+        sumki += pow(graph.at(k,i)-graph.at(k,j), 2.0);
+      }
+
+      // Adding up the results
+      d.at(i,j) = pow(pow(graph.at(i,j) - graph.at(j,i), 2.0) + sumik + sumki, 0.5 );
+
+      // // If only inverse required
+      // if (inv && unscaled) d.at(i,j) = 1.0/(d.at(i,j) + 1e-15);
+
+      d.at(j,i) = d.at(i,j);
     }
-    else degree = degree - loop;
   }
 
-  arma::mat output = arma::conv_to< arma::mat >::from(degree);
-  return output.col(0);
-}
+  // // If only distance must be computed
+  // if (unscaled) return List::create(_["SE"]=d, _["d"]=d, _["gdist"]=graph);
 
-/* **R
- edgelist <- rbind(c(2,1),c(3,1),c(3,2))
- adjmat <- edgelist_to_adjmat_cpp(edgelist)
- degree_cpp(adjmat,0,FALSE)
- degree_cpp(adjmat,1,FALSE)
- degree_cpp(adjmat,2,FALSE)
-*/
-
-/* which:
- * 0: Unweighted
- * 1: Structure equiv weighted
- * 2: Indegree
- * 3: Outdegree
- * 4: Degree
- */
-
-// [[Rcpp::export]]
-arma::colvec exposure_cpp(
-  const arma::sp_mat & graph,
-  const arma::colvec & cumadopt,
-  const arma::colvec & attrs,
-  bool outgoing = true,
-  bool valued = true,
-  bool normalized = true
-) {
-
-  // Getting parameters
-  unsigned n = cumadopt.n_rows;
-  if (n != graph.n_cols) stop("-graph- is not squared.");
-
-  // Creating output and auxiliar objects
-  arma::colvec exposure(n);
-
-  // Checking if need to fill with ones
-  arma::sp_mat graph0(graph);
-  if (!valued) graph0 = arma::spones(graph0);
-
-  // Checking if incomming
-  if (!outgoing) graph0 = graph0.t();
-
-  // Computing numerator
-  // NUMERATOR = (attrs.col(t) % cumadopt.col(t));
-  arma::colvec NUMERATOR   = graph0 * (attrs % cumadopt);
-  arma::colvec DENOMINATOR(n);
-
-  // Exposure for the time period
-  if (normalized) {
-    DENOMINATOR = graph0 * attrs + 1e-15;
-    exposure = NUMERATOR / DENOMINATOR;
-  } else {
-    exposure = NUMERATOR;
-  }
-
-  // Returning
-  return exposure;
-}
-
-// [[Rcpp::export]]
-arma::mat cumulative_adopt_count_cpp(const arma::mat & cumadopt) {
-  int n = cumadopt.n_rows;
-  int T = cumadopt.n_cols;
-
-  arma::mat adoptcount(3,T);
-
-  // Computing cumulative adoptes
-  adoptcount.row(0) = cumsum(sum(cumadopt,0));
-  adoptcount.row(1) = adoptcount.row(0)/n;
-
-  // Calculating rate
-  adoptcount(2,0) = 0.0;
-  for(int t=1;t<T;t++)
-    adoptcount(2,t) = (adoptcount(1,t) - adoptcount(1,t-1))/(adoptcount(1,t-1) + 1e-10);
-
-  return adoptcount;
-}
-
-
-// [[Rcpp::export]]
-arma::rowvec hazard_rate_cpp(const arma::mat & cumadopt) {
-  int n = cumadopt.n_rows;
-  int T = cumadopt.n_cols;
-
-  arma::rowvec cumadoptcount(T);
-  arma::rowvec hazard(T);
-
-  // Computing cumulative adoptes
-  cumadoptcount = cumsum(sum(cumadopt,0));
-
-  hazard(0) = 0.0;
-  for(int t=1;t<T;t++)
-    hazard(t) = (cumadoptcount(t) - cumadoptcount(t-1)) /
-        (n - cumadoptcount(t-1) + 1e-10);
-
-  return hazard;
-}
-
-
-// [[Rcpp::export]]
-NumericVector threshold_cpp(
-    const arma::mat & exposure,
-    const arma::vec & toa,
-    bool include_censored = false
-    ) {
-
-  int n = exposure.n_rows;
-  // int T = exposure.n_cols;
-
-  NumericVector threshold(n);
+  // Computing distances
+  NumericMatrix SE(n,n);
 
   for(int i=0;i<n;i++) {
-    // If NA (aka nan in Armadillo), then NA.
-    if (!arma::is_finite(toa(i))) {
-      threshold(i) = arma::datum::nan;
-      continue;
+
+    // Getting the max of the line
+    for(int j=0;j<n;j++) {
+      if (i==j) continue;
+      if (dmax[i] < d.at(i,j)) dmax[i] = d.at(i,j);
     }
 
-    // If left censored and specified, then don't compute
-    if ((toa(i)==1) & !include_censored) {
-      threshold(i) = NA_REAL;
-      continue;
+    // Computing sum(dmax - dkj)
+    double sumdmaxd = 0.0;
+    for(int k=0;k<n;k++) {
+      if (k==i) continue;
+      sumdmaxd += pow(dmax[i] - d.at(k,i), v);
     }
 
-    threshold(i) = exposure(i,toa(i)-1);
+    // Computing (dmax - d)/sum(dmax - d)
+    for(int j=0;j<n;j++) {
+      if (i==j) continue;
+      SE.at(i,j) = pow(dmax[i] - d.at(j,i), v)/(sumdmaxd + 1e-15);
+    }
+
+    // // If inverse required
+    // if (inv) {
+    //   for(int j=0;j<n;j++) {
+    //     SE.at(i,j) = 1/(SE.at(i,j) + 1e-10);
+    //   }
+    // }
   }
 
-  return threshold;
+  return List::create(_["SE"]=SE, _["d"]=d, _["gdist"]=graph);
 }
 
 /** *R
+ set.seed(1234)
+ adjmat <- rand_graph_cpp()
 
-set.seed(123)
-graph <- rand_dyn_graph_cpp(n=10,t=10)
-tadopt <- sample(1:dim(graph)[3], dim(graph)[2], TRUE)
+ struct_equiv <- function(adjmat, v=1, ...) {
+ geod <- sna::geodist(adjmat, inf.replace = 0, ...)
+ geod[["gdist"]] <- geod[["gdist"]]/max(geod[["gdist"]])
+ struct_equiv_cpp(geod[["gdist"]], v)
+ }
 
-adopt <- toa_mat_cpp(tadopt)
-exp_mat <- exposure(graph, adopt$cumadopt)$unweight
+ microbenchmark::microbenchmark(sna::sedist, struct_equiv, times=10000)
 
-threshold_cpp(exp_mat, tadopt)
-
-*/
-/*
-// [[Rcpp::export]]
-double graph_density(arma::sp_mat graph, bool undirected=false) {
-  int n = graph.n_cols;
-  double dens = 0.0;
-
-  return graph.n_nonzero / (n * (n-1));
-
-}
-*/
+# Use this implementation
+ new <- struct_equiv(adjmat)
+ old <- sna::sedist(adjmat, method = 'euclidean')
+ rowSums(new$SE)
+ new
+ old
+ */

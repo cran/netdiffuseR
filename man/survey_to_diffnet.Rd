@@ -36,12 +36,11 @@ that do not show in \code{idvar} are set to \code{NA} (see details).}
 
 \item{t}{Integer scalar. Repeat the network \code{t} times (if no \code{t0,t1} are provided).}
 
-\item{undirected}{Logical scalar. TRUE when the graph is undirected.}
+\item{undirected}{Logical scalar. When \code{TRUE} only the lower triangle will be processed.}
 
-\item{self}{Logical scalar. TRUE when self edges are excluded.}
+\item{self}{Logical scalar. When \code{TRUE} allows loops (self edges).}
 
-\item{multiple}{Logical scalar. TRUE when multiple edges should not be included
-(see details).}
+\item{multiple}{Logical scalar. When \code{TRUE} allows multiple edges.}
 
 \item{keep.isolates}{Logical scalar. When FALSE, rows with \code{NA/NULL} values
 (isolated vertices unless have autolink) will be droped (see details).}
@@ -176,6 +175,7 @@ Vega Yon
 \code{\link{fakesurvey}}, \code{\link{fakesurveyDyn}}
 
 Other data management functions: \code{\link{as_diffnet}},
-  \code{\link{edgelist_to_adjmat}}, \code{\link{isolated}}
+  \code{\link{edgelist_to_adjmat}},
+  \code{\link{egonet_attrs}}, \code{\link{isolated}}
 }
 

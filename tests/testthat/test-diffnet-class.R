@@ -1,4 +1,4 @@
-context("Data-management on diffnet objects")
+context("Diffnet class and methods")
 
 # Checking attributes ----------------------------------------------------------
 test_that("Checking attributes in as_diffnet", {
@@ -81,12 +81,43 @@ test_that("Error messages", {
   # Already a diffnet
   expect_message(as_diffnet(diffnet), "already.+diffnet")
 
-  # # Coercing to data.frame
-  # static_attr <- matrix(diffnet[["real_threshold"]], ncol=1)
-  # expect_warning(
-  #   as_diffnet(diffnet$graph, toa=diffnet.toa(diffnet),
-  #              t0=1, t1=20,
-  #              vertex.static.attrs = static_attr), "coerced to a data\\.frame")
+})
+
+test_that("Passing id.and.per.vars gives the right sorting", {
+  # Right sort
+  data(fakesurveyDyn)
+
+  # Creating a diffnet object
+  fs_diffnet <- survey_to_diffnet(
+    fakesurveyDyn, "id", c("net1", "net2", "net3"), "toa", "group",
+    timevar = "time", keep.isolates=TRUE, warn.coercion=FALSE)
+
+  # Now, we extract the graph data and create a diffnet object from scratch
+  graph <- fs_diffnet$graph
+  ids <- fs_diffnet$meta$ids
+  graph <- Map(function(g) {
+    dimnames(g) <- list(ids,ids)
+    g
+  }, g=graph)
+  attrs <- diffnet.attrs(fs_diffnet, as.df=TRUE)
+  toa   <- diffnet.toa(fs_diffnet)
+
+  # Lets apply a different sorting to the data to see if it works
+  n <- nrow(attrs)
+  attrs <- attrs[order(runif(n)),]
+
+  # Now, recreating the old diffnet object (notice -id.and.per.vars- arg)
+  fs_diffnet_new <- as_diffnet(graph, toa=toa, vertex.dyn.attrs=attrs,
+                               id.and.per.vars = c("id", "per"))
+
+  # Now, retrieving attributes. The 'new one' will have more (repeated)
+  attrs_new <- diffnet.attrs(fs_diffnet_new, as.df=TRUE)
+  attrs_old <- diffnet.attrs(fs_diffnet, as.df=TRUE)
+
+  # Comparing elements!
+  tocompare <- intersect(colnames(attrs_new), colnames(attrs_old))
+  expect_true(all(attrs_new[,tocompare] == attrs_old[,tocompare], na.rm = TRUE)) # TRUE!
+
 })
 
 # test_that("Setting attributes", {
@@ -134,4 +165,65 @@ test_that("as_diffnet with different graph classes", {
   dn_arr$meta$class <- dn_dgc$meta$class <- NULL
   expect_equal(dn_arr, dn_dgc)
 
+  # Defunct
+  expect_error(diffnet.attrs(dn_arr, "hola") <- NULL, "defunct")
+
 })
+
+# ------------------------------------------------------------------------------
+test_that("Warnings and errors", {
+  set.seed(11222344)
+  g <- rdiffnet(100,5)
+  g[["dynamic"]] <- lapply(1:5, function(x) runif(100))
+
+  # Messages
+  expect_warning(with(g, as_diffnet(graph, as.numeric(toa))), "into integer")
+
+  attrs <- as.matrix(g$vertex.static.attrs)
+  dimnames(attrs) <- NULL
+
+  dynattrs <- lapply(g$vertex.dyn.attrs, function(x) {
+    ans <- as.matrix(x)
+    dimnames(ans) <- NULL
+    ans
+    })
+  ans <- with(g, as_diffnet(graph, toa, vertex.static.attrs = attrs,
+                            vertex.dyn.attrs = dynattrs))
+
+  # Making variables
+  expect_output(print(ans), "V1 \\(1\\)")
+  expect_output(print(ans), "v\\.dyn\\.1 \\(1\\)")
+  expect_s3_class(ans$vertex.static.attrs, "data.frame")
+
+  expect_error(
+    with(g, as_diffnet(graph, toa, vertex.static.attrs = 1:99))
+  )
+  expect_error(
+    with(g, as_diffnet(graph, toa, graph.attrs = vector("list",5)))
+  )
+
+  # Different method of dynamic attributes
+  ans0 <- with(g, as_diffnet(graph, toa, vertex.static.attrs = attrs,
+                            vertex.dyn.attrs = do.call(rbind, dynattrs)))
+
+  ans1 <- with(g, as_diffnet(graph, toa, vertex.static.attrs = attrs,
+                             vertex.dyn.attrs = do.call(rbind, dynattrs)[,1]))
+  expect_equal(ans,ans0)
+  expect_equal(ans,ans1)
+})
+
+# ------------------------------------------------------------------------------
+test_that("graph attributes", {
+  set.seed(131)
+  g <- lapply(1:4, function(x) rgraph_ba(t=9))
+  toa <- sample(c(NA, 1:4), 10, TRUE)
+
+  # Less than expected
+  expect_error(as_diffnet(g, toa, graph.attrs = runif(3)), "3 .+ 4")
+  expect_error(as_diffnet(g, toa, graph.attrs = data.frame(runif(3))), "3 .+ 4")
+  expect_output(print(
+    as_diffnet(g, toa, graph.attrs = runif(4))$graph.attrs
+  ), "1 .+\\n2 .+\\n3 .+\\n4")
+
+})
+

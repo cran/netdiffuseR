@@ -17,4 +17,19 @@ arma::sp_mat sp_trimatl(const arma::sp_mat & x);
 
 int unif_rand_w_exclusion(int n, int e);
 
+arma::sp_mat sp_as_undirected(const arma::sp_mat & x);
+
+typedef double (*funcPtr)(double y0, double y1);
+
+double st_dist(double y0, double y1);
+double st_quaddist(double y0, double y1);
+double st_greater(double y0, double y1);
+double st_greaterequal(double y0, double y1);
+double st_smaller(double y0, double y1);
+double st_smallerequal(double y0, double y1);
+double st_equal(double y0, double y1);
+
+void st_getfun(std::string funname, funcPtr & fun);
+NumericVector complete_cases_graph(arma::sp_mat & graph, NumericVector & x);
+
 #endif

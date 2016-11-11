@@ -1,4 +1,6 @@
-context("Plotting functions 1 (plot_diffnet, threshold, and exposure)")
+# library(netdiffuseR)
+# library(testthat)
+context("plot_diffnet, threshold, and exposure")
 
 # plot_diffnet -----------------------------------------------------------------
 
@@ -26,8 +28,29 @@ test_that("Should return coords of dim n x 2 (plot_diffnet)", {
   expect_equal(dim(coords), c(11,2), info = "applying to diffnet")
 })
 
-# plot_threshold, threshold and exposure ---------------------------------------
+test_that("More plot methods", {
 
+  # Empty graph
+  set.seed(1231)
+  g <- rdiffnet(20, 4)
+
+  ans1  <- plot(g)
+  ans2 <- plot(g, coord=ans1)
+
+  expect_equal(ans1, ans2)
+
+  ans1 <- plot_adopters(g)
+  expect_output(print(ans1), "0[.]85")
+
+  # Invallid cex
+  expect_error(plot(g, vertex.cex="1"), "Invalid.+cex")
+  expect_error(plot_diffnet(g, vertex.cex="1"), "Invalid.+cex")
+
+  expect_silent(plot_adopters(g$cumadopt))
+})
+
+# plot_threshold, threshold and exposure ---------------------------------------
+context("Threshold functions")
 test_that("Returning threshold equal to the threshold fun (plot_threshold and )", {
   # Generating a random graph
   set.seed(123)
@@ -60,11 +83,22 @@ test_that("Returning threshold equal to the threshold fun (plot_threshold and )"
   expect_equivalent(as.matrix(thdn["threshold"]), threshold(expos, toa))
   expect_equivalent(th, thar)
   expect_equivalent(th, thdn)
+
+  expect_error(plot_threshold(graph), "expo.+should be pro.+diffnet")
+  expect_error(plot_threshold(diffnet, vertex.cex = "a"), "Invalid.+cex")
+
+  # Repeating cex
+  expect_silent(plot_threshold(diffnet, vertex.cex=.5))
+  expect_warning(plot_threshold(diffnet, vertex.sides = 1.2), "integer")
+  expect_error(plot_threshold(diffnet, vertex.sides = "1.2"), "integer")
+  expect_error(plot_threshold(diffnet, vertex.rot = "a"), "numeric")
+  expect_error(plot_threshold(diffnet, vertex.rot = rep(1,2)), "same length")
+  expect_error(plot_threshold(diffnet, vertex.sides=c(1L,2L)), "same length")
+
 })
 
+context("Infectiousness and susceptibility (plot methods)")
 # plot_infectsuscept, infection, susceptibility --------------------------------
-
-
 test_that("Returning threshold equal to the infect/suscept funs", {
   # Generating a random graph
   set.seed(123)
@@ -94,8 +128,14 @@ test_that("Returning threshold equal to the infect/suscept funs", {
   expect_equal(infsusdn$infect, infect)
   expect_equal(infsusdn$suscept, suscep)
 
-})
+  expect_error(plot_infectsuscep(graph), "toa.+provided")
+  expect_error(suppressWarnings(plot_infectsuscep(diffnet), "undefined values"))
+  data("medInnovationsDiffNet")
+  expect_warning(plot_infectsuscep(medInnovationsDiffNet), "missing")
 
+
+})
+context("Other methods")
 # Printing and summary of diffnet! ---------------------------------------------
 test_that("diffnet print and summary", {
   diffnet <- lapply(1:3, rgraph_ba, m0=1,t=9)
@@ -107,6 +147,8 @@ test_that("diffnet print and summary", {
   expect_output(print(diffnet_dir), "type.+ directed", ignore.case=TRUE)
 
   expect_output(summary(diffnet_und), "Diffusion network summary")
+
+  expect_equal(capture_output(str(diffnet)), capture_output(str(unclass(diffnet))))
 })
 
 test_that("summary.diffnet with slices", {
@@ -144,5 +186,108 @@ test_that('concatenating diffnet', {
   # mi1less <- mi1[['city']] <- NULL
   # colnames(mi1less)
   # expect_error(c())
+
+})
+
+# Arithmetic and others---------------------------------------------------------
+test_that("Arithmetic and others", {
+  # Pow
+  set.seed(18181)
+  g <- rdiffnet(100, 3)
+
+  ans0 <- graph_power(g, 2)
+  ans1 <- g^2
+  ans2 <- g
+  ans2$graph <- Map(function(x) x %*% x, g$graph)
+
+  expect_equal(lapply(ans1$graph, as.matrix), lapply(ans2$graph, as.matrix))
+  expect_equal(lapply(ans0$graph, as.matrix), lapply(ans2$graph, as.matrix))
+
+  # Substract
+  ans0 <- g - c(1,2)
+  ans1 <- g[-c(1,2)]
+  ans2 <- g-g[-(3:100)]
+  ans3 <- g - c("1","2")
+
+  expect_equal(ans0,ans1)
+  expect_equal(ans0,ans2)
+  expect_equal(ans0,ans3)
+
+  expect_error(g-"z", "right-hand side")
+
+  # MMultiply
+  ans0 <- g %*% g
+  ans1 <- g
+  ans1$graph <- Map(function(x) x %*% x, x=ans1$graph)
+
+  expect_equal(ans0, ans1)
+
+  ans0 <- g %*% g$graph[[1]]
+  ans1 <- g
+  ans1$graph <- Map(function(x) x %*% g$graph[[1]], x=ans1$graph)
+
+  expect_equal(ans0, ans1)
+
+  ans0 <- g$graph[[1]] %*% g
+  ans1 <- g
+  ans1$graph <- Map(function(x) g$graph[[1]] %*% x, x=ans1$graph)
+
+  expect_equal(ans0, ans1)
+
+  # Multiply
+  ans0 <- g*2
+  ans1 <- g
+  ans1$graph <- Map(function(x) x*2, x=ans1$graph)
+
+  # Multiply and transpose
+  ans0 <- g*t(g)
+  ans1 <- g
+  ans1$graph <- Map(function(x) x*methods::getMethod("t","dgCMatrix")(x), x=ans1$graph)
+
+  expect_equal(ans0, ans1)
+
+  # Logical comparison
+  ans0 <- g & t(g)
+  ans1 <- g
+  ans1$graph <- Map(function(a,b) methods::as(a & b, "dgCMatrix"), a=g$graph, b=t(g$graph))
+
+  expect_equivalent(ans1, ans0)
+
+  ans0 <- g | t(g)
+  ans1 <- g
+  ans1$graph <- Map(function(a,b) methods::as(a | b, "dgCMatrix"), a=g$graph, b=t(g$graph))
+
+  expect_equivalent(ans1, ans0)
+
+  # Divide by scalar
+  ans0 <- g/10
+  ans1 <- (1/10)/(1/g)
+  expect_equivalent(ans0,ans1)
+
+  ans0 <- diffnetLapply(g, function(cumadopt,...) mean(cumadopt))
+  ans1 <- lapply(lapply(apply(g$cumadopt, 2, list), unlist), mean)
+
+  expect_equal(ans0,ans1)
+})
+
+# nnodes and nlinks------------------------------------------------------------
+test_that("nnodes and nedges", {
+  set.seed(21)
+  dn <- rdiffnet(20,3)
+
+  ans0 <- nlinks(dn)
+  ans1 <- nlinks(dn$graph)
+  ans2 <- nlinks(as.array(dn))
+
+  expect_equal(ans0,ans1)
+  expect_equal(ans0,ans2)
+
+  ans0 <- nnodes(dn)
+  ans1 <- nnodes(dn$graph)
+  ans2 <- nnodes(as.array(dn))
+
+  expect_equal(ans0,ans1)
+  expect_equal(ans0,ans2)
+
 
 })

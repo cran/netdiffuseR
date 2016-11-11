@@ -6,10 +6,11 @@
 \usage{
 rewire_graph(graph, p, algorithm = "endpoints", both.ends = FALSE,
   self = FALSE, multiple = FALSE,
-  undirected = getOption("diffnet.undirected"), copy.first = TRUE)
+  undirected = getOption("diffnet.undirected"), pr.change = ifelse(self,
+  0.5, 1), copy.first = TRUE, althexagons = FALSE)
 }
 \arguments{
-\item{graph}{Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}})}
+\item{graph}{Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).}
 
 \item{p}{Either a [0,1] vector with rewiring probabilities (\code{algorithm="endpoints"}),
 or an integer vector with number of iterations (\code{algorithm="swap"}).}
@@ -22,10 +23,15 @@ or an integer vector with number of iterations (\code{algorithm="swap"}).}
 
 \item{multiple}{Logical scalar. When \code{TRUE} allows multiple edges.}
 
-\item{undirected}{Logical scalar. \code{TRUE} when the graph is undirected.}
+\item{undirected}{Logical scalar. When \code{TRUE} only the lower triangle will be processed.}
+
+\item{pr.change}{Numeric scalar. Probability ([0,1]) of doing a rewire (see details).}
 
 \item{copy.first}{Logical scalar. When \code{TRUE} and \code{graph} is dynamic uses
 the first slice as a baseline for the rest of slices (see details).}
+
+\item{althexagons}{Logical scalar. When \code{TRUE} uses the compact alternating
+hexagons algorithm (currently ignored [on development]).}
 }
 \description{
 Changes the structure of a graph by altering ties.
@@ -81,9 +87,10 @@ has been implemented as follows:
 
 Let \eqn{E} be the set of edges of the graph \eqn{G}. For \eqn{i=1} to \eqn{p}, do:
 \enumerate{
+ \item With probability \code{1-pr.change} got to the last step.
  \item Choose \eqn{e0=(a, b)} from \eqn{E}. If \code{!self & a == b} then go to the last step.
  \item Choose \eqn{e1=(c, d)} from \eqn{E}. If \code{!self & c == d } then go to the last step.
- \item Define \eqn{e0'=(a, d)} and \eqn{e1' = (c, b)}. If \code{!multiple & [G[e0']!= 0 | G[e1'] != 0]} then go to the last step.
+ \item Define \eqn{e0'=(a, d)} and \eqn{e1' = (c, b)}. If \code{!multiple & [G[e0']!= 0 | G[e1'] != 0]} then go to the last step.(*)
  \item Define \eqn{v0 = G[e0]} and \eqn{v1 = G[e1]}, set \eqn{G[e0]=0} and \eqn{G[e1]=0}
  (and the same to the diagonally opposed coordinates in the case of undirected graphs)
  \item Set \eqn{G[e0'] = v0} and \eqn{G[e1'] = v1} (and so with the diagonally opposed coordinates
@@ -91,9 +98,26 @@ Let \eqn{E} be the set of edges of the graph \eqn{G}. For \eqn{i=1} to \eqn{p}, 
  \item Next i.
 }
 
-Milo et al. (2004) suggests that in order for the rewired graph to be independent
+(*) When \code{althexagons=TRUE}, the algorithm changes and applies what Rao et al.
+(1996) describe as Compact Alternating Hexagons. This modification assures the
+algorithm to be able to achieve any structure. The algorithm consists on doing
+the following swapping: \eqn{(i1i2,i1i3,i2i3,i2i1,i3i1,i3i2)} with values
+\eqn{(1,0,1,0,1,0)} respectively with \eqn{i1!=i2!=i3}. See the examples and
+references.
+
+In Milo et al. (2004) is suggested that in order for the rewired graph to be independent
 from the original one researchers usually iterate around \code{nlinks(graph)*100}
-times, so \code{p=nlinks(graph)*100} is recommended.
+times, so \code{p=nlinks(graph)*100}. On the other hand in Ray et al (2012)
+it is shown that in order to achive such it is needed to perform
+\code{nlinks(graph)*log(1/eps)}, where \code{eps}\eqn{\sim}1e-7, in other words,
+around \code{nlinks(graph)*16}. We set the default to be 20.
+
+In the case of Markov chains, the variable \code{pr.change} allows making the
+algorithm aperiodic. This is relevant only if the
+probability self-loop to a particular state is null, for example, if
+we set \code{self=TRUE} and \code{muliple=TRUE}, then in every step the
+algorithm will be able to change the state. For more details see
+Stanton and Pinar (2012) [p. 3.5:9].
 }
 
 \section{\emph{Endpoints} algorithm}{
@@ -167,10 +191,29 @@ Milo, R., Kashtan, N., Itzkovitz, S., Newman, M. E. J., & Alon, U.
 (2004). On the uniform generation of random graphs with prescribed degree sequences.
 Arxiv Preprint condmat0312028, cond-mat/0, 1–4. Retrieved from
 \url{http://arxiv.org/abs/cond-mat/0312028}
+
+Ray, J., Pinar, A., and Seshadhri, C. (2012).
+Are we there yet? When to stop a Markov chain while generating random graphs.
+pages 1–21.
+
+Ray, J., Pinar, A., & Seshadhri, C. (2012). Are We There Yet? When to Stop a
+Markov Chain while Generating Random Graphs. In A. Bonato & J. Janssen (Eds.),
+Algorithms and Models for the Web Graph (Vol. 7323, pp. 153–164).
+Berlin, Heidelberg: Springer Berlin Heidelberg.
+\url{http://doi.org/10.1007/978-3-642-30541-2}
+
+A . Ramachandra Rao, R. J. and S. B. (1996). A Markov Chain Monte Carlo Method
+for Generating Random ( 0 , 1 ) -Matrices with Given Marginals. The Indian
+Journal of Statistics, 58, 225–242.
+
+Stanton, I., & Pinar, A. (2012). Constructing and sampling graphs with a
+prescribed joint degree distribution. Journal of Experimental Algorithmics,
+17(1), 3.1. \url{http://doi.org/10.1145/2133803.2330086}
 }
 \seealso{
-Other simulation functions: \code{\link{rdiffnet}},
-  \code{\link{rgraph_ba}}, \code{\link{rgraph_er}},
-  \code{\link{rgraph_ws}}, \code{\link{ring_lattice}}
+Other simulation functions: \code{\link{permute_graph}},
+  \code{\link{rdiffnet}}, \code{\link{rgraph_ba}},
+  \code{\link{rgraph_er}}, \code{\link{rgraph_ws}},
+  \code{\link{ring_lattice}}
 }
 
