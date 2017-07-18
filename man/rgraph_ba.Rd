@@ -3,6 +3,7 @@
 \name{rgraph_ba}
 \alias{rgraph_ba}
 \alias{scale-free}
+\alias{rgraph_ba}
 \title{Scale-free and Homophilic Random Networks}
 \usage{
 rgraph_ba(m0 = 1L, m = 1L, t = 10L, graph = NULL, self = TRUE,
@@ -17,7 +18,7 @@ rgraph_ba(m0 = 1L, m = 1L, t = 10L, graph = NULL, self = TRUE,
 
 \item{graph}{Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).}
 
-\item{self}{Logical scalar. When \code{TRUE} allows loops (self edges).}
+\item{self}{Logical scalar. When \code{TRUE} autolinks (loops, self edges) are allowed (see details).}
 
 \item{eta}{Numeric vector of length \code{t+m0}. When specified, it generates
 a scale-free homophilic network (see details).}
@@ -88,9 +89,6 @@ suppressWarnings(plot(dgr(ans), main="Degree distribution"))
 par(oldpar)
 
 }
-\author{
-George G. Vega Yon
-}
 \references{
 Bollobás, B´., Riordan, O., Spencer, J., & Tusnády, G. (2001). The degree
 sequence of a scale-free random graph process. Random Structures & Algorithms,
@@ -112,6 +110,9 @@ Other simulation functions: \code{\link{permute_graph}},
   \code{\link{rgraph_er}}, \code{\link{rgraph_ws}},
   \code{\link{ring_lattice}}
 }
+\author{
+George G. Vega Yon
+}
 \concept{
 Scale-free random graph
 
@@ -124,4 +125,3 @@ Homophilic random graph
 Random graph
 }
 \keyword{distribution}
-

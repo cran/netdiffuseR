@@ -324,3 +324,132 @@ gplot(g %*% g %*% g %*% g, displaylabels = TRUE, coord = coord, edge.lwd = 1)
 par(oldpar)
 
 */
+
+
+//[[Rcpp::export]]
+arma::sp_mat approx_geodesicCpp(
+    const arma::sp_mat & G,
+    unsigned int n = 6,
+    bool warn = false
+) {
+
+  int N = (int) G.n_cols;
+  arma::sp_mat ans(N,N);
+
+  typedef arma::sp_mat::const_iterator spiter;
+
+  // Going through the steps
+  arma::sp_mat pG = G;
+  arma::sp_mat G0 = G;
+  int change_count = 0;
+  n++;
+  unsigned int nsteps;
+  for (unsigned int i=1u; i<n; i++) {
+
+    nsteps = 0u;
+
+    // Computing nsteps
+    std::vector< unsigned int > irow;
+    std::vector< unsigned int > icol;
+    std::vector< unsigned int > ival;
+
+    // Iterating throught the power graph's elements
+    for (spiter it = pG.begin(); it != pG.end(); it ++) {
+
+      if (it.row() == it.col())
+        continue;
+
+      // Checking user interrupt
+      if (++nsteps % 1000)
+        Rcpp::checkUserInterrupt();
+
+      if (ans.at(it.row(), it.col()) == 0u) {
+        // Storing coordinates
+        irow.push_back(it.row());
+        icol.push_back(it.col());
+
+        ival.push_back(i);
+        ++change_count;
+      }
+    }
+
+    // Refilling the ans using batch insertion
+    arma::sp_mat tmp(
+        arma::join_cols(
+          arma::conv_to< arma::urowvec >::from(irow),
+          arma::conv_to< arma::urowvec >::from(icol)
+        ),
+        arma::conv_to< arma::colvec >::from(ival),
+        N, N,
+        true,
+        false
+      );
+
+    // Adding the delta
+    ans = ans + tmp;
+
+    // Was there any change?
+    if (!change_count) {
+      if (warn)
+        warning("The algorithm stopped at %i iterations.", i);
+      break;
+    } else change_count = 0;
+
+    // Graph power
+    pG *= G0;
+  }
+
+  return ans;
+}
+
+
+/***R
+
+library(sna)
+  library(netdiffuseR)
+  library(igraph)
+  library(microbenchmark)
+
+  set.seed(123)
+  g_sp  <- rgraph_ws(n=500, k = 3, p = .2, self = FALSE)
+  g_mat <- as.matrix(g_sp)
+  g_ig  <- graph_from_adjacency_matrix(g_sp)
+
+  microbenchmark(
+    sna = geodist(g_mat),
+    nd  = approx_geodesic(g_sp, 6),
+    ig  = distances(g_ig),
+    times = 500,
+    unit = "ms"
+  )
+
+  # Unit: milliseconds
+  # expr       min        lq     mean    median       uq      max neval
+  # sna 32.578531 37.298168 43.86050 40.834380 46.49778 196.5955   500
+  # nd  7.959418  8.679596 10.24444  9.251891 10.61416  22.9517   500
+  # ig 11.516345 13.012492 15.67670 14.049763 16.31242 171.5637   500
+
+  ans0 <- geodist(g_mat)[[2]]
+ans1 <- as.matrix(approx_geodesic(g_sp, 10))
+
+  are0 <- which(ans1[] != 0, arr.ind = TRUE)
+  prop.table(table(ans0 - ans1))
+
+  g_sp  <- kfamilyDiffNet$graph$`1`
+
+  microbenchmark(
+    sna = geodist(as.matrix(g_sp)),
+    nd  = approx_geodesic(g_sp, 10), times = 30,
+    unit = "ms"
+  )
+
+  ans0 <- geodist(as.matrix(g_sp))[[2]]
+ans1 <- as.matrix(approx_geodesic(g_sp, 20))
+
+  are0 <- which(ans1[] != 0, arr.ind = TRUE)
+  prop.table(table(ans0 - ans1))
+
+
+
+
+  */

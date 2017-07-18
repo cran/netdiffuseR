@@ -94,7 +94,7 @@ sapply(1:n, threshold.dist)
 
 By default sets the threshold to be random for each node in the graph.
 
-If \code{sgraph} is provided, no random graph is generated and the simulation
+If \code{seed.graph} is provided, no random graph is generated and the simulation
 is applied using that graph instead.
 }
 \examples{
@@ -113,13 +113,12 @@ newMI <- rdiffnet(seed.graph = medInnovationsDiffNet$graph,
  threshold.dist = threshold(medInnovationsDiffNet), rewire=FALSE)
 
 }
-\author{
-George G. Vega Yon
-}
 \seealso{
 Other simulation functions: \code{\link{permute_graph}},
   \code{\link{rewire_graph}}, \code{\link{rgraph_ba}},
   \code{\link{rgraph_er}}, \code{\link{rgraph_ws}},
   \code{\link{ring_lattice}}
 }
-
+\author{
+George G. Vega Yon
+}

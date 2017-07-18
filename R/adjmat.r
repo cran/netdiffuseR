@@ -36,6 +36,10 @@
 #' not included on the graph. Incomplete cases are tagged using \code{\link{complete.cases}}
 #' and can be retrieved by the user by accessing the attribute \code{incomplete}.
 #'
+#' Were the case that either ego or alter are missing (i.e. \code{NA} values), the
+#' function will either way include the non-missing vertex. See below for an example
+#' of this.
+#'
 #' The function performs several checks before starting to create the adjacency
 #' matrix. These are:
 #' \itemize{
@@ -113,9 +117,21 @@
 #' # Creating a diffnet object with it so we can apply the plot_diffnet function
 #' diffnet <- as_diffnet(graph, toa=1:4)
 #' plot_diffnet(diffnet, label=rownames(diffnet))
+#'
+#' # Missing alter in the edgelist ---------------------------------------------
+#' data(fakeEdgelist)
+#'
+#' # Notice that edge 202 is isolated
+#' fakeEdgelist
+#'
+#' # The function still includes vertex 202
+#' edgelist_to_adjmat(fakeEdgelist[,1:2])
+#'
+#' edgelist
+#'
 #' @keywords manip
 #' @family data management functions
-#' @include graph_data.R
+#' @include graph_data.r
 #' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 edgelist_to_adjmat <- function(
   edgelist, w=NULL,
@@ -440,7 +456,7 @@ adjmat_to_edgelist.list <- function(graph, undirected, keep.isolates) {
 #'  \item{\code{cumadopt}}{has 1's for all years in which a node indicates having the innovation.}
 #'  \item{\code{adopt}}{has 1's only for the year of adoption and 0 for the rest.}
 #' @keywords manip
-#' @include graph_data.R
+#' @include graph_data.r
 #' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 toa_mat <- function(obj, labels=NULL, t0=NULL, t1=NULL) {
 
@@ -534,7 +550,7 @@ toa_mat.integer <- function(times, labels=NULL,
 #' # Computing the TOA differences
 #' toa_diff(times)
 #' @keywords manip
-#' @include graph_data.R
+#' @include graph_data.r
 #' @author George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 toa_diff <- function(obj, t0=NULL, labels=NULL) {
 
@@ -817,3 +833,87 @@ simmelian_mat <- function(graph, ...) {
 }
 
 
+
+#' Approximate Geodesic Distances
+#'
+#' Computes approximate geodesic distance matrix using graph powers and keeping
+#' the amount of memory used low.
+#'
+#' @template graph_template
+#' @param n Integer scalar. Degree of approximation. Bigger values increase
+#' precission (see details).
+#' @param warn Logical scalar. When \code{TRUE}, it warns if the algorithm
+#' performs less steps than required.
+#'
+#' @details
+#'
+#' While both \pkg{igraph} and \pkg{sna} offer very good and computationally
+#' efficient routines for computing geodesic distances, both functions return
+#' dense matrices, i.e. not sparse, which can be troublesome. Furthermore,
+#' from the perspective of social network analysis, path lengths of more than 6 steps,
+#' for example, may not be meaningful, or at least, relevant for the researcher.
+#' In such cases, \code{approx_geodesic} serves as a solution to this problem,
+#' computing geodesics up to the number of steps, \code{n}, desired, hence,
+#' if \code{n = 6}, once the algorithm finds all paths of 6 or less steps it
+#' will stop, returning a sparse matrix with zeros for those pairs of
+#' vertices for which it was not able to find a path with less than \code{n}
+#' steps.
+#'
+#' Depending on the graph size and density, \code{approx_geodesic}'s performance
+#' can be compared to that of \code{\link[sna:geodist]{sna::geodist}}. Although,
+#' as \code{n} increases, \code{geodist} becomes a better alternative.
+#'
+#' The algorithm was implemented using power graphs. At each itereation i the
+#' power graph of order \code{i} is computed, and its values are compared
+#' to the current values of the geodesic matrix (which is initialized in zero).
+#'
+#' \enumerate{
+#' \item Initialize the output \code{ans(n, n)}
+#' \item For \code{i=1} to \code{i < n} do
+#' \enumerate{
+#'   \item Iterate through the edges of \code{G^i}, if \code{ans} has a zero
+#'   value in the corresponding row+column, replace it with \code{i}
+#'   \item next
+#' }
+#' \item Replace all diagonal elements with a zero and return.
+#' }
+#'
+#' This implementation can be more memory efficient that the aforementioned ones,
+#' but at the same time it can be significant slower.
+#'
+#' \code{approx_geodist} is just an allias for \code{approx_geodesic}.
+#'
+#' @return A sparse matrix of class \code{\link[Matrix:dgCMatrix-class]{dgCMatrix}} of size
+#' \code{nnodes(graph)^2} with geodesic distances up to \code{n}.
+#'
+#' @examples
+#' # A very simple example -----------------------------------------------------
+#' g <- ring_lattice(10, 3)
+#' approx_geodesic(g, 6)
+#' sna::geodist(as.matrix(g))[[2]]
+#' igraph::distances(
+#'   igraph::graph_from_adjacency_matrix(g),
+#'   mode = "out"
+#' )
+#'
+#' @aliases Geodesic Shortest-Path
+#' @export
+approx_geodesic <- function(graph, n = 6L, warn=FALSE) {
+  cls <- class(graph)
+
+  if ("dgCMatrix" %in% cls) {
+    approx_geodesicCpp(graph, n, warn)
+  } else if ("matrix" %in% cls) {
+    approx_geodesicCpp(methods::as(graph, "dgCMatrix"), n, warn)
+  } else if ("list" %in% cls) {
+    lapply(graph, approx_geodesicCpp, n = n, warn = warn)
+  } else if ("diffnet" %in% cls) {
+    lapply(graph$graph, approx_geodesicCpp, n = n, warn = warn)
+  } else if ("array" %in% cls) {
+    apply(graph, 3, approx_geodesicCpp, n = n, warn = warn)
+  } else stopifnot_graph(graph)
+}
+
+#' @rdname approx_geodesic
+#' @export
+approx_geodist <- approx_geodesic

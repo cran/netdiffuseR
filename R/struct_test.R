@@ -9,13 +9,13 @@
 #' @param statistic A function that returns either a scalar or a vector.
 #' @param R Integer scalar. Number of repetitions.
 #' @param rewire.args List. Arguments to be passed to \code{\link{rewire_graph}}
-#' @param x A \code{diffnet_boot} class object.
+#' @param x A \code{diffnet_struct_test} class object.
 #' @param ... Further arguments passed to the method (see details).
 #' @param main Character scalar. Title of the histogram.
 #' @param xlab Character scalar. x-axis label.
 #' @param breaks Passed to \code{\link{hist}}.
 #' @param annotated Logical scalar. When TRUE marks the observed data average and the simulated data average.
-#' @return A list of class \code{diffnet_bot} containing the following:
+#' @return A list of class \code{diffnet_struct_test} containing the following:
 #' \item{graph}{The graph passed to \code{struct_test}.}
 #' \item{p.value}{The resulting p-value of the test (see details).}
 #' \item{t0}{The observed value of the statistic.}
@@ -26,6 +26,7 @@
 #' \item{rewire.args}{The list \code{rewire.args} passed to \code{struct_test}.}
 #'
 #' @details
+#'
 #' \code{struct_test} computes the test by generating the null distribution using
 #' Monte Carlo simulations (rewiring). \code{struct_test_asymp} computes the
 #' test using an asymptotic approximation. While available, we do not recommend
@@ -38,9 +39,15 @@
 #' \code{struct_test} is a wrapper for the function \code{\link[boot:boot]{boot}} from the
 #' \pkg{boot} package. Instead of resampling data--vertices or edges--in each iteration the function
 #' rewires the original graph using \code{\link{rewire_graph}} and applies
-#' the function defined by the user in \code{statistic}. In particular, the \code{"swap"} algorithm
-#' is used in order to preserve the degree sequence of the graph, in other words,
-#' each rewired version of the original graph has the same degree sequence.
+#' the function defined by the user in \code{statistic}.
+#'
+#' The default values to \code{rewire_graph} via \code{rewire.args} are:
+#' \tabular{ll}{
+#' \code{p}          \tab Number or Integer with default \code{n_rewires(graph)}. \cr
+#' \code{undirected} \tab Logical scalar with default \code{getOption("diffnet.undirected", FALSE)}. \cr
+#' \code{copy.first} \tab Logical scalar with \code{TRUE}. \cr
+#' \code{algorithm}  \tab Character scalar with default \code{"swap"}.
+#' }
 #'
 #' In \code{struct_test} \code{\dots} are passed to \code{boot}, otherwise are passed
 #' to the corresponding method (\code{\link{hist}} for instance).
@@ -72,7 +79,8 @@
 #'
 #' The function \code{n_rewires} proposes a vector of number of rewirings that
 #' are performed in each iteration.
-#' @export
+#'
+#' @family Functions for inference
 #' @references
 #' Vega Yon, George G. and Valente, Thomas W. (On development).
 #'
@@ -129,18 +137,22 @@ struct_test_pval <- function(meanobs, meansim) {
 }
 
 #' @rdname struct_test
+#' @export
 struct_test <- function(
   graph,
   statistic,
   R,
-  rewire.args=list(
-    p          = n_rewires(graph),
-    undirected = getOption("diffnet.undirected", FALSE),
-    copy.first = TRUE,
-    algorithm  = "swap"
-    ),
+  rewire.args=list(),
   ...
   ) {
+
+  # Checking defaults
+  if (!length(rewire.args$p)) rewire.args$p <- n_rewires(graph)
+  if (!length(rewire.args$undirected))
+    rewire.args$undirected <- getOption("diffnet.undirected", FALSE)
+  if (!length(rewire.args$copy.first)) rewire.args$copy.first <- TRUE
+  if (!length(rewire.args$algorithm)) rewire.args$algorithm <- "swap"
+
 
   # # Checking class
   # if (!inherits(graph, "diffnet"))
@@ -171,7 +183,7 @@ struct_test <- function(
     p.value     = p.value,
     t0          = boot_res$t0,
     mean_t      = colMeans(boot_res$t, na.rm = TRUE),
-    var_t       = var(colMeans(boot_res$t, na.rm = TRUE)),
+    var_t       = apply(boot_res$t, 2, var, na.rm = TRUE),
     R           = R,
     statistic   = statistic,
     boot        = boot_res,
@@ -207,6 +219,15 @@ c.diffnet_struct_test <- function(..., recursive=FALSE) {
 #' @rdname struct_test
 print.diffnet_struct_test <- function(x, ...) {
 
+  # Neat column printing
+  netcol <- function(obs, expe, pval) {
+    txt <- paste0(sprintf("  %10.4f  %10.4f  %10.4f", obs, expe, pval), collapse="\n")
+    paste(
+      sprintf("  %10s  %10s  %10s", "observed", "expected", "p.val"),
+      txt, sep = "\n"
+    )
+  }
+
   with(x,  {
     nsim <- ifelse(!is.na(R), R, 0)
 
@@ -216,9 +237,7 @@ print.diffnet_struct_test <- function(x, ...) {
         "# of time periods : ", formatC(nslices(x$graph), digits = 0, format = "f", big.mark = ","),"\n",
         paste(rep("-",80), collapse=""),"\n",
         " H0: E[beta(Y,G)|G] - E[beta(Y,G)] = 0 (no structure dependency)\n",
-        "   E[beta(Y,G)|G] (observed) = ", paste0(sprintf("%12.4f",t0), collapse=", "), "\n",
-        "   E[beta(Y,G)] (expected)   = ", paste0(sprintf("%12.4f",mean_t), collapse=", "), "\n",
-        "   p-value                   = ", paste0(sprintf("%12.4f", p.value), collapse=", "),"\n",
+        netcol(t0, mean_t, p.value),
         sep="")
   })
   invisible(x)
@@ -227,6 +246,8 @@ print.diffnet_struct_test <- function(x, ...) {
 #' @export
 #' @param b0 Character scalar. When \code{annotated=TRUE}, label for the value of \code{b0}.
 #' @param b Character scalar. When \code{annotated=TRUE}, label for the value of \code{b}.
+#' @param ask Logical scalar. When \code{TRUE}, asks the user to type \code{<Enter>} to see each plot (as
+#' many as statistics where computed).
 #' @rdname struct_test
 hist.diffnet_struct_test <- function(
   x,
@@ -236,23 +257,46 @@ hist.diffnet_struct_test <- function(
   annotated=TRUE,
   b0=expression(atop(plain("") %up% plain("")), t[0]),
   b =expression(atop(plain("") %up% plain("")), t[]),
+  ask = TRUE,
   ...) {
 
-  out <- hist(x$boot$t,  breaks=breaks, plot=FALSE)
-  ran <- range(out$mids)
-  if (annotated) {
-    mt <- mean(x$boot$t, na.rm=TRUE)
-    ran <- range(c(ran, mt, x$boot$t0))
-    hist(x$boot$t, breaks=breaks, main=main, xlab=xlab, xlim = ran, ...)
-  } else {
-    hist(x$boot$t, breaks=breaks, main=main, xlab=xlab, ...)
+  # Par parameters
+  if (ask) {
+    oldpar <- par(no.readonly = TRUE)
+    on.exit(par(oldpar))
+    par(ask=ask)
   }
 
-  # Adding margin note
-  if (annotated) {
-    mtext(b0, side = 1, at=x$boot$t0)
-    mtext(b, side = 1, at=mt)
+  out <- vector("list", ncol(x$boot$t))
+  for (i in 1:ncol(x$boot$t)) {
+
+    # Computing the histogram and its range
+    out[[i]] <- hist(x$boot$t[,i],  breaks=breaks, plot=FALSE)
+    ran      <- range(out[[i]]$mids, na.rm = TRUE)
+
+    if (annotated) {
+
+      # Annotated version (pretty)
+      mt <- mean(x$boot$t[,i], na.rm=TRUE)
+      ran <- range(c(ran, mt, x$boot$t0[i]), na.rm=TRUE)
+      hist(x$boot$t[,i], breaks=breaks, main=main, xlab=xlab, xlim = ran, ...)
+
+    } else {
+
+      # Not annotated version
+      hist(x$boot$t[,i], breaks=breaks, main=main, xlab=xlab, ...)
+
+    }
+
+    # Adding margin note
+    if (annotated) {
+
+      mtext(b0, side = 1, at=x$boot$t0[i])
+      mtext(b, side = 1, at=mt)
+
+    }
   }
+
   invisible(out)
 }
 # #' @rdname struct_test

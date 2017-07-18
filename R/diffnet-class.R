@@ -328,16 +328,14 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #' @templateVar dynamic TRUE
 #' @templateVar undirected TRUE
 #' @templateVar self TRUE
-#' @templateVar valued TRUE
 #' @templateVar multiple TRUE
 #' @template graph_template
 #' @param gmode Character scalar. Passed to \code{\link[sna:gplot]{sna::gplot}.}
 #' @param toa Numeric vector of size \eqn{n}. Times of adoption.
 #' @param t0 Integer scalar. Passed to \code{\link{toa_mat}}.
 #' @param t1 Integer scalar. Passed to \code{\link{toa_mat}}.
-#' @param ... In the case of \code{plot}, further arguments passed to \code{gplot}, for
-#' \code{summary}, further arguments to be passed to
-#' \code{\link[igraph:distances]{igraph::distances}}, otherwise is ignored.
+#' @param ... In the case of \code{plot}, further arguments passed to \code{gplot},
+#' otherwise is ignored.
 #' @param x A \code{diffnet} object.
 #' @param object A \code{diffnet} object.
 #' @param y Ignored.
@@ -347,8 +345,7 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #' @param vertex.cex Numeric scalar/vector. Size of the vertices.
 #' @param edge.col Character scalar/vector. Color of the edges.
 #' @param mode Character scalar. In the case of \code{plot}, passed to
-#' \code{\link[sna:gplot]{gplot}}. Otherwise, in the case of summary, passed to
-#' \code{\link[igraph:distances]{igraph::distances}}.
+#' \code{\link[sna:gplot]{gplot}}.
 #' @param layout.par Layout parameters (see details).
 #' @param main Character. A title template to be passed to sprintf.
 #' @param i Indices specifying elements to replace. See \code{\link[base:Extract]{Extract}}.
@@ -358,14 +355,10 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #' @param graph.attrs Graph dynamic attributes (not supported yet).
 #' @param id.and.per.vars A character vector of length 2. Optionally specified to check the
 #' order of the rows in the attribute data.
-#' @param slices Either an integer or character vector. While integer vectors are used as
-#' indexes, character vectors are used jointly with the time period labels.
 #' @param element Character vector/scalar. Indicates what to retrieve/alter.
 #' @param attr.class Character vector/scalar. Indicates the class of the attribute, either dynamic (\code{"dyn"}),
 #' or static (\code{"static"}).
 #' @param as.df Logical scalar. When TRUE returns a data.frame.
-#' @param no.print Logical scalar. When TRUE suppress screen messages.
-#' @param skip.moran Logical scalar. When TRUE Moran's I is not reported (see details).
 #' @param name Character scalar. Name of the diffusion network (descriptive).
 #' @param behavior Character scalar. Name of the behavior been analyzed (innovation).
 #' @export
@@ -414,23 +407,6 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #'
 #' where \code{d=sqrt(dgr(graph))}.
 #'
-#' In the case of the \code{summary} method, Moran's I is calculated over the
-#' cumulative adoption matrix using as weighting matrix the inverse of the geodesic
-#' distance matrix. All this via \code{\link{moran}}. For each time period \code{t},
-#' this is calculated as:
-#'
-#' \preformatted{
-#'  m = moran(C[,t], G^(-1))
-#' }
-#'
-#' Where \code{C[,t]} is the t-th column of the cumulative adoption matrix,
-#' \code{G^(-1)} is the element-wise inverse of the geodesic matrix at time \code{t},
-#' and \code{moran} is \pkg{netdiffuseR}'s moran's I routine. When \code{skip.moran=TRUE}
-#' Moran's I is not reported. This can be useful when the graph is particuarly
-#' large (tens of thousands of vertices) as when doing so geodesic distances are
-#' not calculated, which avoids allocating a square matrix of size \eqn{n} on
-#' the memory. As a difference from the adjacency matrices, the matrix with the
-#' geodesic distances can't be stored as a sparse matrix (saving space).
 #'
 #' @section Auxiliary functions:
 #'
@@ -493,6 +469,7 @@ check_as_diffnet_attrs <- function(attrs, meta, is.dynamic, id.and.per.vars=NULL
 #'
 #' # Now as a data.frame (all of them)
 #' diffnet.attrs(diffnet, as.df = TRUE)
+#' as.data.frame(diffnet) # This is a wrapper
 #'
 #' # Unsorted data -------------------------------------------------------------
 #' # Loading example data
@@ -667,7 +644,21 @@ as_diffnet <- function(graph, toa, t0=min(toa, na.rm = TRUE), t1=max(toa, na.rm 
 
 #' @export
 #' @rdname as_diffnet
-diffnet.attrs <- function(graph, element=c("vertex","graph"), attr.class=c("dyn","static"),as.df=FALSE) {
+#' @param row.names Ignored.
+#' @param optional Ignored.
+as.data.frame.diffnet <- function(x, row.names = NULL, optional = FALSE,
+                                  attr.class = c("dyn", "static"), ...) {
+  diffnet.attrs(x, element = "vertex", attr.class = attr.class, as.df = TRUE)
+}
+
+#' @export
+#' @rdname as_diffnet
+diffnet.attrs <- function(
+  graph,
+  element    = c("vertex","graph"),
+  attr.class = c("dyn","static"),
+  as.df      = FALSE
+  ) {
   nper <- graph$meta$nper
   pers <- graph$meta$pers
   n    <- graph$meta$n

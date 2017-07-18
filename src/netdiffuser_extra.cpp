@@ -117,6 +117,11 @@ double st_smaller(double y0, double y1) {return (double) (y0 < y1);}
 double st_smallerequal(double y0, double y1) {return (double) (y0 <= y1);}
 double st_equal(double y0, double y1) {return (double) (y0 == y1);}
 
+double st_min(double y0, double y1) {return fmin(y0, y1);}
+double st_max(double y0, double y1) {return fmax(y0, y1);}
+double st_mean(double y0, double y1) {return (y0 + y1) /2.0;}
+
+
 // XPtr<funcPtr> st_getfun(std::string funname) {
 void st_getfun(std::string funname, funcPtr & fun) {
   if      (funname == "distance")                           fun = &st_dist;
@@ -126,20 +131,55 @@ void st_getfun(std::string funname, funcPtr & fun) {
   else if ((funname == "smaller") | (funname == "<"))       fun =  &st_smaller;
   else if ((funname == "smallerequal") | (funname == "<=")) fun =  &st_smallerequal;
   else if ((funname == "equal") | (funname == "=="))        fun =  &st_equal;
+  else if ((funname == "min") | (funname == "minimum"))        fun =  &st_min;
+  else if ((funname == "max") | (funname == "maximum"))        fun =  &st_max;
+  else if ((funname == "mean") | (funname == "avg"))        fun =  &st_mean;
   else Rcpp::stop("Unkown function.");
 
   return ;
 }
 
-// Removes cases of graph that are not complete in x
-NumericVector complete_cases_graph(arma::sp_mat & graph, const NumericVector & x) {
-  std::vector<double> ans;
-  int n = x.size();
-  for (int i =0;i<n;i++)
-    if (NumericVector::is_na(x[i])) {
-      graph.shed_col(i);
-      graph.shed_row(i);
-    } else ans.push_back(x[i]);
+// [[Rcpp::export]]
+arma::sp_mat bootnet_fillself(
+    arma::sp_mat & graph,
+    const IntegerVector & index,
+    const NumericVector & E
+  ) {
 
-  return wrap(ans);
+  // Parameters: Size and density of the graph
+  int n = index.length();
+  int m = E.length();
+  double dens = ((double) m) / (double) (n*n);
+
+  // Finding repeated values
+  std::vector< std::vector<int> > reps(n);
+  for (int i=0; i<n; i++) {
+    reps.at(index.at(i)-1).push_back(i);
+  }
+
+  // Sampling E
+  NumericVector rand(2);
+  for (int i=0; i<n; i++) {
+    // If has no elements
+    if (reps.at(i).size() < 2) continue;
+
+    std::vector<int> r(reps.at(i));
+
+    for (unsigned int j=0; j< r.size(); j++)
+      for (unsigned int k=j; k<r.size(); k++) {
+
+        if (j==k) continue;
+
+        // Add accordingly to density
+        if (unif_rand() <= dens)
+          graph.at(r.at(j),r.at(k)) = E.at(floor(unif_rand()*m));
+
+        // Add accordingly to density
+        if (unif_rand() <= dens)
+          graph.at(r.at(k),r.at(j)) = E.at(floor(unif_rand()*m));
+      }
+
+  }
+
+  return graph;
 }

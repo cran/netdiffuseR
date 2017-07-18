@@ -2,11 +2,11 @@
 % Please edit documentation in R/spatial.R
 \name{diag_expand}
 \alias{diag_expand}
+\alias{diag_expand.list}
+\alias{diag_expand.diffnet}
+\alias{diag_expand.matrix}
 \alias{diag_expand.array}
 \alias{diag_expand.dgCMatrix}
-\alias{diag_expand.diffnet}
-\alias{diag_expand.list}
-\alias{diag_expand.matrix}
 \title{Creates a square matrix suitable for spatial statistics models.}
 \usage{
 diag_expand(...)
@@ -31,7 +31,7 @@ diag_expand(...)
 
 \item{graph}{Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).}
 
-\item{self}{Logical scalar. When \code{TRUE} allows loops (self edges).}
+\item{self}{Logical scalar. When \code{TRUE} autolinks (loops, self edges) are allowed (see details).}
 
 \item{valued}{Logical scalar. When \code{TRUE} weights will be considered. Otherwise non-zero values will be replaced by ones.}
 
@@ -56,4 +56,3 @@ g
 # and on cell 'off' adjacency matrix
 diag_expand(g)
 }
-

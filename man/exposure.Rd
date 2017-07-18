@@ -2,6 +2,7 @@
 % Please edit documentation in R/stats.R
 \name{exposure}
 \alias{exposure}
+\alias{exposure}
 \title{Ego exposure}
 \usage{
 exposure(graph, cumadopt, attrs = NULL, alt.graph = NULL,
@@ -18,7 +19,7 @@ exposure(graph, cumadopt, attrs = NULL, alt.graph = NULL,
 \item{attrs}{Either a character scalar (if \code{graph} is diffnet),
 or a numeric matrix of size \eqn{n\times T}{n * T}. Weighting for each time, period (see details).}
 
-\item{alt.graph}{Either a dynamic graph that should be used instead of \code{graph},
+\item{alt.graph}{Either a graph that should be used instead of \code{graph},
 or \code{"se"} (see details).}
 
 \item{outgoing}{Logical scalar. When \code{TRUE}, computed using outgoing ties.}
@@ -30,7 +31,7 @@ and one (see details).}
 
 \item{groupvar}{Passed to \code{\link{struct_equiv}}.}
 
-\item{self}{Logical scalar. When \code{TRUE} allows loops (self edges).}
+\item{self}{Logical scalar. When \code{TRUE} autolinks (loops, self edges) are allowed (see details).}
 
 \item{...}{Further arguments passed to \code{\link{struct_equiv}} (only used when
 \code{alt.graph="se"}).}
@@ -70,6 +71,9 @@ is computed via \code{\link{struct_equiv}} and used instead of the provided
 graph. Notice that when using a valued graph the option \code{valued} should
 be equal to \code{TRUE}, this check is run automatically when running the
 model using structural equivalence.
+
+If the \code{alt.graph} is static, then the function will warn about it
+and will recycle the graph to compute exposure at each time point.
 
 \bold{An important remark} is that when calculating \bold{structural equivalence} the
 function \bold{assumes that this is to be done to the entire graph} regardless of
@@ -153,7 +157,7 @@ diffnet
 test <- summary(medInnovationsDiffNet, no.print=TRUE) ==
    summary(diffnet, no.print=TRUE)
 
-stopifnot(all(test))
+stopifnot(all(test[!is.na(test)]))
 
 # METHOD 2: Using the 'groupvar' argument
 # Further, we can compare this with using the groupvar
@@ -162,7 +166,7 @@ diffnet[["expo_se2"]] <- exposure(diffnet, alt.graph="se",
 
 # These should be equivalent
 test <- diffnet[["expo_se", as.df=TRUE]] == diffnet[["expo_se2", as.df=TRUE]]
-stopifnot(all(test))
+stopifnot(all(test[!is.na(test)]))
 
 # METHOD 3: Computing exposure, rbind and then adding it to the diffnet object
 expo_se3 <- NULL
@@ -180,7 +184,7 @@ expo_se3 <- expo_se3[diffnet$meta$ids,]
 diffnet[["expo_se3"]] <- expo_se3
 
 test <- diffnet[["expo_se", as.df=TRUE]] == diffnet[["expo_se3", as.df=TRUE]]
-stopifnot(all(test))
+stopifnot(all(test[!is.na(test)]))
 
 
 # METHOD 4: Using the groupvar in struct_equiv
@@ -195,13 +199,10 @@ se <- lapply(se, function(x) {
 diffnet[["expo_se4"]] <- exposure(diffnet, alt.graph=se, valued=TRUE)
 
 test <- diffnet[["expo_se", as.df=TRUE]] == diffnet[["expo_se4", as.df=TRUE]]
-stopifnot(all(test))
+stopifnot(all(test[!is.na(test)]))
 
 
 
-}
-\author{
-George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
 }
 \references{
 Burt, R. S. (1987). "Social Contagion and Innovation: Cohesion versus Structural
@@ -212,12 +213,15 @@ Valente, T. W. (1995). "Network models of the diffusion of innovations"
  (2nd ed.). Cresskill N.J.: Hampton Press.
 }
 \seealso{
-Other statistics: \code{\link{classify_adopters}},
+Other statistics: \code{\link{bass}},
+  \code{\link{classify_adopters}},
   \code{\link{cumulative_adopt_count}}, \code{\link{dgr}},
   \code{\link{ego_variance}}, \code{\link{hazard_rate}},
   \code{\link{infection}}, \code{\link{moran}},
   \code{\link{struct_equiv}}, \code{\link{threshold}},
   \code{\link{vertex_covariate_dist}}
 }
+\author{
+George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
+}
 \keyword{univar}
-

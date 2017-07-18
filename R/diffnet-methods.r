@@ -1,7 +1,8 @@
 #' @export
 #' @rdname as_diffnet
 plot.diffnet <- function(
-  x,y=NULL, t=1, displaylabels = FALSE, vertex.col = c("blue", "grey"),
+  x,y=NULL, t=1, displaylabels = FALSE,
+  vertex.col = c(adopt="blue", noadopt="grey"),
   gmode=ifelse(x$meta$undirected, "graph", "digraph"),
   vertex.cex = "degree", edge.col = "gray", mode = "fruchtermanreingold",
   layout.par = NULL, main = "Diffusion network in time %d", ...) {
@@ -90,11 +91,63 @@ print.diffnet <- function(x, ...) {
   invisible(x)
 }
 
+#' Summary of diffnet objects
+#'
 #' @export
-#' @rdname as_diffnet
-summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
-                            skip.moran=FALSE, valued=getOption("diffnet.valued",FALSE),
-                            mode="out", ...) {
+#' @param object An object of class \code{\link[=as_diffnet]{diffnet}}.
+#' @param slices Either an integer or character vector. While integer vectors are used as
+#' indexes, character vectors are used jointly with the time period labels.
+#' @param valued Logical scalar. When \code{TRUE} weights will be considered.
+#' Otherwise non-zero values will be replaced by ones.
+#' @param no.print Logical scalar. When TRUE suppress screen messages.
+#' @param skip.moran Logical scalar. When TRUE Moran's I is not reported (see details).
+#' @param ... Further arguments to be passed to \code{\link{approx_geodesic}}.
+#' @details
+#' Moran's I is calculated over the
+#' cumulative adoption matrix using as weighting matrix the inverse of the geodesic
+#' distance matrix. All this via \code{\link{moran}}. For each time period \code{t},
+#' this is calculated as:
+#'
+#' \preformatted{
+#'  m = moran(C[,t], G^(-1))
+#' }
+#'
+#' Where \code{C[,t]} is the t-th column of the cumulative adoption matrix,
+#' \code{G^(-1)} is the element-wise inverse of the geodesic matrix at time \code{t},
+#' and \code{moran} is \pkg{netdiffuseR}'s moran's I routine. When \code{skip.moran=TRUE}
+#' Moran's I is not reported. This can be useful for both: reducing computing
+#' time and saving memory as geodesic distance matrix can become large. Since
+#' version \code{1.18.0}, geodesic matrices are approximated using \code{approx_geodesic}
+#' which, as a difference from \code{\link[sna:geodist]{geodist}} from the
+#' \pkg{sna} package, and \code{\link[igraph:distances]{distances}} from the
+#' \pkg{igraph} package returns a matrix of class \code{dgCMatrix} (more
+#' details in \code{\link{approx_geodesic}}).
+#'
+#' @return A data frame with the following columns:
+#' \item{adopt}{Integer. Number of adopters at each time point.}
+#' \item{cum_adopt}{Integer. Number of cumulative adopters at each time point.}
+#' \item{cum_adopt_pcent}{Numeric. Proportion of comulative adopters at each time point.}
+#' \item{hazard}{Numeric. Hazard rate at each time point.}
+#' \item{density}{Numeric. Density of the network at each time point.}
+#' \item{moran_obs}{Numeric. Observed Moran's I.}
+#' \item{moran_exp}{Numeric. Expected Moran's I.}
+#' \item{moran_sd}{Numeric. Standard error of Moran's I under the null.}
+#' \item{moran_pval}{Numeric. P-value for the observed Moran's I.}
+#' @author George G. Vega Yon
+#'
+#' @examples
+#' data(medInnovationsDiffNet)
+#' summary(medInnovationsDiffNet)
+#'
+#' @family diffnet methods
+#'
+summary.diffnet <- function(
+  object,
+  slices     = NULL,
+  no.print   = FALSE,
+  skip.moran = FALSE,
+  valued     = getOption("diffnet.valued",FALSE),
+  ...) {
   # Subsetting
   if (!length(slices)) slices <- 1:object$meta$nper
 
@@ -122,18 +175,18 @@ summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
 
   # Computing moran's I
   if (!skip.moran) {
-    m <- vector("numeric", length(slices))
+
+    m <- matrix(NA, nrow=length(slices), ncol=4,
+                dimnames = list(NULL, c("moran_obs", "moran_exp", "moran_sd", "moran_pval")))
+
     for (i in 1:length(slices)) {
       # Computing distances
-      g <- igraph::graph_from_adjacency_matrix(object$graph[[slices[i]]])
-      g <- igraph::distances(g, mode=mode, ...)
-      g[!is.finite(g)] <- meta$n
+      g <- approx_geodesic(object$graph[[slices[i]]], ...)
 
       # Inverting it (only the diagonal may have 0)
-      g <- 1/g
-      diag(g) <- 0
+      g@x <- 1/g@x
 
-      m[i] <- moran(object$cumadopt[,slices[i]], g)["I"]
+      m[i,] <- unlist(moran(object$cumadopt[,slices[i]], g))
     }
   }
   # Computing adopters, cumadopt and hazard rate
@@ -153,13 +206,18 @@ summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
     density=d
   )
 
-  if (!skip.moran) out$moran <- m
+  if (!skip.moran) {
+    out <- cbind(out, m)
+  }
 
   if (no.print) return(out)
 
   # Function to print data.frames differently
-  header <- c(" Period ","Adopters","Cum Adopt.", "Cum Adopt. %",
-              "Hazard Rate","Density", if (!skip.moran) "Moran's I" else NULL)
+  header <- c(" Period "," Adopters "," Cum Adopt. (%) ",
+              " Hazard Rate "," Density ",
+              if (!skip.moran) c(" Moran's I (sd) ") else NULL
+              )
+
   slen   <- nchar(header)
   hline  <- paste(sapply(sapply(slen, rep.int, x="-"), paste0, collapse=""),
                   collapse=" ")
@@ -177,8 +235,25 @@ summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
   for (i in 1:nrow(out)) {
     cat(sprintf(
       paste0("%",slen,"s", collapse=" "),
-      qf(meta$pers[slices[i]],0), qf(out[i,1],0), qf(out[i,2],0), qf(out[i,3]),
-      ifelse(i==1, "-",qf(out[i,4])), qf(out[i,5]), if (!skip.moran) qf(out[i,6]) else ""
+      qf(meta$pers[slices[i]],0), qf(out[i,1],0),
+      sprintf("%s (%s)",
+        qf(out$cum_adopt[i],0),
+        qf(out$cum_adopt_pcent[i])
+        ),
+      ifelse(i==1, "-",qf(out$hazard[i])), qf(out$density[i]),
+      if (!skip.moran) {
+        if (is.nan(out$moran_sd[i]))
+          " - "
+        else
+          sprintf("%s (%s) %-3s",
+                  qf(out$moran_obs[i]),
+                  qf(out$moran_sd[i]),
+                  ifelse(out$moran_pval[i] <= .01, "***",
+                         ifelse(out$moran_pval[i] <= .05, "**",
+                                ifelse(out$moran_pval[i] <= .10, "*", ""
+                              )))
+                )
+      } else ""
     ), "\n")
   }
 
@@ -190,6 +265,8 @@ summary.diffnet <- function(object, slices=NULL, no.print=FALSE,
     paste(" Left censoring  :", sprintf("%3.2f (%d)", lc/meta$n, lc)),
     paste(" Right centoring :", sprintf("%3.2f (%d)", rc/meta$n, rc)),
     paste(" # of nodes      :", sprintf("%d",meta$n)),
+    "\n Moran's I was computed on contemporaneous autocorrelation using 1/geodesic",
+    " values. Significane levels  *** <= .01, ** <= .05, * <= .1.",
     sep="\n"
   )
 
@@ -443,8 +520,17 @@ plot_diffnet.list <- function(graph, cumadopt, slices,
     if (!inherits(graph[[i]], "dgCMatrix")) g <- methods::as(graph[[i]], "dgCMatrix")
     else g <- graph[[i]]
 
+    # Checking dimnames
+    if (!length(unlist(dimnames(g), recursive = TRUE)))
+      dimnames(g) <- list(1:nnodes(g), 1:nnodes(g))
+
+    # Creating igraph object
+    ig  <- igraph::graph_from_adjacency_matrix(g)
+    ig  <- igraph::permute(ig, match(igraph::V(ig)$name, nodes(g)))
+
+
     # Plotting
-    igraph::plot.igraph(igraph::graph_from_adjacency_matrix(g),
+    igraph::plot.igraph(ig,
                         vertex.color = cols,
                         layout = coords_adjs,
                         edge.color = edge.col,
@@ -1049,8 +1135,8 @@ plot_adopters <- function(obj, freq=FALSE, what=c("adopt","cumadopt"),
   # If not been added
   if (!add) {
     if (include.legend)
-      legend("topleft", bty="n",
-             legend = c("Cumulative adopters", "Adopters")[test], fill = bg)
+      legend("topleft", bty="n", pch=pch,
+             legend = c("Cumulative adopters", "Adopters")[test], pt.bg = bg, col=col)
 
     if (include.grid)
       grid()
@@ -1436,8 +1522,20 @@ nslices <- function(graph) {
 #' @export
 #' @rdname as_diffnet
 nodes <- function(graph) {
-  if (!inherits(graph, "diffnet")) stop("-graph- must be a 'diffnet' object")
-  graph$meta$ids
+  cls <- class(graph)
+  if ("diffnet" %in% cls)
+    return(graph$meta$ids)
+  else if ("list" %in% cls) {
+    ans <- rownames(graph[[1]])
+    if (!length(ans)) stop("There are not names to fetch")
+    else return(ans)
+  } else if (any(c("matrix", "dgCMatrix", "array") %in% cls)) {
+    ans <- rownames(graph)
+    if (!length(ans)) stop("There are not names to fetch")
+    else return(ans)
+  }
+  else stopifnot_graph(graph)
+
 }
 
 #' @export
@@ -1490,3 +1588,4 @@ dim.diffnet <- function(x) {
   k <- length(with(x, c(colnames(vertex.static.attrs), names(vertex.dyn.attrs[[1]]))))
   as.integer(with(x$meta, c(n, k, nper)))
 }
+

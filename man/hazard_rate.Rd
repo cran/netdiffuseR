@@ -2,9 +2,9 @@
 % Please edit documentation in R/stats.R
 \name{hazard_rate}
 \alias{hazard_rate}
-\alias{plot.diffnet_hr}
-\alias{plot_hazard}
 \alias{plot_hazarrate}
+\alias{plot_hazard}
+\alias{plot.diffnet_hr}
 \title{Network Hazard Rate}
 \usage{
 hazard_rate(obj, no.plot = FALSE, include.grid = TRUE, ...)
@@ -110,9 +110,6 @@ cumadopt <- toa_mat(toa)$cumadopt
 # Visualizing the hazard rate
 hazard_rate(cumadopt)
 }
-\author{
-George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
-}
 \references{
 Allison, P. (1984). Event history analysis regression for longitudinal event
 data. Beverly Hills: Sage Publications.
@@ -121,7 +118,8 @@ Wooldridge, J. M. (2010). Econometric Analysis of Cross Section and Panel Data
 (2nd ed.). Cambridge: MIT Press.
 }
 \seealso{
-Other statistics: \code{\link{classify_adopters}},
+Other statistics: \code{\link{bass}},
+  \code{\link{classify_adopters}},
   \code{\link{cumulative_adopt_count}}, \code{\link{dgr}},
   \code{\link{ego_variance}}, \code{\link{exposure}},
   \code{\link{infection}}, \code{\link{moran}},
@@ -137,5 +135,7 @@ Other visualizations: \code{\link{dgr}},
   \code{\link{plot_threshold}},
   \code{\link{rescale_vertex_igraph}}
 }
+\author{
+George G. Vega Yon, Stephanie R. Dyal, Timothy B. Hayes & Thomas W. Valente
+}
 \keyword{univar}
-

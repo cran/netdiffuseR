@@ -4,8 +4,8 @@ NULL
 #' @importFrom sna gplot as.sociomatrix.sna
 NULL
 
-#' @importFrom igraph graph_from_adjacency_matrix set_vertex_attr distances
-#'  any_multiple graph_attr_names as_adj is.loop set_graph_attr
+#' @importFrom igraph graph_from_adjacency_matrix set_vertex_attr
+#'  any_multiple graph_attr_names as_adj is.loop set_graph_attr V permute
 #' @importFrom network as.edgelist is.multiplex is.directed has.loops
 NULL
 
@@ -29,9 +29,11 @@ NULL
 #' @importFrom graphics grid par plot points symbols text layout legend lines
 #'  matplot plot.new plot.window hist mtext polygon image title .filled.contour
 #' @importFrom stats complete.cases runif reshape setNames ftable sd pnorm var
+#' as.formula optim nls coef
 #' @importFrom utils getFromNamespace head str
 #' @importFrom boot boot
 #' @importFrom MASS bandwidth.nrd kde2d
+#' @importFrom MatchIt matchit
 NULL
 
 release_questions <- function() {
