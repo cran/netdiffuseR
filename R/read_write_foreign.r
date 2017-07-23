@@ -44,8 +44,9 @@
 #' @author George G. Vega Yon
 #' @export
 #' @aliases read_net read_dl
-#' @family graph formats
+#' @family Foreign
 #' @source From the pajek manual \url{http://mrvar.fdv.uni-lj.si/pajek/pajekman.pdf}
+#'
 read_pajek <- function(x) {
   # (1) Reading the file and finding the tags ----------------------------------
   lines <- readLines(x)
@@ -309,11 +310,11 @@ UCINET_datatype <- c(
 #' \item{dow}{Integer. Day of the week the file was created.}
 #' \item{labtype}{}
 #' \item{infile.dt}{Character scalar. Type of data of the array.}
-#' \item{dim}{Integer vector. Dimmensions of the array.}
+#' \item{dim}{Integer vector. Dimensions of the array.}
 #' \item{tit}{Character scalar. Title of the file.}
 #' \item{haslab}{Logical vector. Whether  each dim has a label.}
 #' @aliases ucinet UCINET
-#' @family graph formats
+#' @family Foreign
 read_ucinet_head <- function(f) {
   con <- file(f,"rb")
   on.exit(close(con))

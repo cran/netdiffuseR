@@ -1,5 +1,46 @@
+#' S3 plotting method for diffnet objects.
+#'
+#' @param x An object of class \code{\link[=diffnet-class]{diffnet}}
+#' @param t Integer scalar indicating the time slice to plot.
+#' @param displaylabels Logical scalar. When TRUE, \code{plot} shows vertex labels.
+#' @param vertex.col Character scalar/vector. Color of the vertices.
+#' @param vertex.cex Numeric scalar/vector. Size of the vertices.
+#' @param edge.col Character scalar/vector. Color of the edges.
+#' @param mode Character scalar. In the case of \code{plot}, passed to
+#' \code{\link[sna:gplot]{gplot}}.
+#' @param layout.par Layout parameters (see details).
+#' @param gmode Character scalar. Passed to \code{\link[sna:gplot]{sna::gplot}.}
+#' @param main Character. A title template to be passed to sprintf.
+#' @param ... Further arguments passed to \code{\link[sna:gplot]{gplot}}.
+#' @param y Ignored.
 #' @export
-#' @rdname as_diffnet
+#'
+#' @family diffnet methods
+#' @details
+#' Plotting is done via the function \code{\link[sna:gplot]{gplot}},
+#' and its layout via \code{\link[sna:gplot.layout]{gplot.layout}}, both from
+#' the (\pkg{sna}) package.
+#'
+#' \code{vertex.cex} can either be a numeric scalar, a numeric vector or a character
+#' scalar taking any of the following values \code{"degree"}, \code{"indegree"}, or
+#' \code{"outdegree"}. The later will be passed to \code{\link{dgr}} to calculate
+#' degree of the selected slice and will be normalized as
+#'
+#' \deqn{
+#'   vertex.cex = d/[max(d) - min(d)]\times 2 + .5}{%
+#'   vertex.cex = d/[max(d) - min(d)]* 2 + .5 %
+#'  }
+#'
+#' where \code{d=sqrt(dgr(graph))}.
+#'
+#' @return A matrix with the coordinates of the vertices.
+#' @author George G. Vega Yon
+#' @examples
+#'
+#' data(medInnovationsDiffNet)
+#' plot(medInnovationsDiffNet)
+#'
+#'
 plot.diffnet <- function(
   x,y=NULL, t=1, displaylabels = FALSE,
   vertex.col = c(adopt="blue", noadopt="grey"),
@@ -52,7 +93,7 @@ plot.diffnet <- function(
 }
 
 #' @export
-#' @rdname as_diffnet
+#' @rdname diffnet-class
 print.diffnet <- function(x, ...) {
   with(x, {
     # Getting attrs
@@ -1153,7 +1194,7 @@ plot_adopters <- function(obj, freq=FALSE, what=c("adopt","cumadopt"),
 
 #' \code{diffnet} Arithmetic and Logical Operators
 #'
-#' Addition, substraction, network power of diffnet and logical operators such as
+#' Addition, subtraction, network power of diffnet and logical operators such as
 #' \code{&} and \code{|} as objects
 #'
 #' @param x A \code{diffnet} class object.
@@ -1265,7 +1306,7 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
     y <- which(x$meta$ids %in% y)
     x[-y,,drop=FALSE]
   } else
-    stop("Substraction between -",class(x),"- and -", class(y), "- not supported.")
+    stop("Subtraction between -",class(x),"- and -", class(y), "- not supported.")
 }
 
 #' @export
@@ -1273,10 +1314,10 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
 `*.diffnet` <- function(x,y) {
   if (inherits(x, "diffnet") & inherits(y, "diffnet")) {
 
-    # Checking dimmensions
+    # Checking dimensions
     test <- all(dim(x) == dim(y))
     if (!test)
-      stop('Both -x- and -y- must have the same dimmensions.')
+      stop('Both -x- and -y- must have the same dimensions.')
 
     x$graph <- mapply(`*`, x$graph, y$graph)
     return(x)
@@ -1365,13 +1406,13 @@ graph_power <- function(x, y, valued=getOption("diffnet.valued", FALSE)) {
   } else if (inherits(x, "diffnet") && !inherits(y, "diffnet")) {
     if (identical(rep(dim(x)[1],2), dim(y)))
       x$graph <- mapply(base::`%*%`, x$graph, mat2dgCList(y, x))
-    else stop("-y- must have the same dimmension as -x-")
+    else stop("-y- must have the same dimension as -x-")
   } else if (inherits(y, "diffnet") && !inherits(x, "diffnet")) {
     if (identical(rep(dim(y)[1],2), dim(x))) {
       y$graph <- mapply(base::`%*%`, mat2dgCList(x, y), y$graph)
       return(y)
     }
-    else stop("-y- must have the same dimmension as -x-")
+    else stop("-y- must have the same dimension as -x-")
   }
 
   x
@@ -1520,7 +1561,7 @@ nslices <- function(graph) {
 }
 
 #' @export
-#' @rdname as_diffnet
+#' @rdname diffnet-class
 nodes <- function(graph) {
   cls <- class(graph)
   if ("diffnet" %in% cls)
@@ -1539,7 +1580,7 @@ nodes <- function(graph) {
 }
 
 #' @export
-#' @rdname as_diffnet
+#' @rdname diffnet-class
 #' @param FUN a function to be passed to lapply
 diffnetLapply <- function(graph, FUN, ...) {
   lapply(seq_len(nslices(graph)), function(x, graph, ...) {
@@ -1559,13 +1600,13 @@ diffnetLapply <- function(graph, FUN, ...) {
 # })
 
 #' @export
-#' @rdname as_diffnet
+#' @rdname diffnet-class
 str.diffnet <- function(object, ...) {
   utils::str(unclass(object))
 }
 
 #' @export
-#' @rdname as_diffnet
+#' @rdname diffnet-class
 dimnames.diffnet <- function(x) {
   with(x, list(
     meta$ids,
@@ -1575,14 +1616,14 @@ dimnames.diffnet <- function(x) {
 }
 
 #' @export
-#' @rdname as_diffnet
+#' @rdname diffnet-class
 #' @method t diffnet
 t.diffnet <- function(x) {
   x$graph <- lapply(x$graph, getMethod("t", "dgCMatrix"))
   x
 }
 
-#' @rdname as_diffnet
+#' @rdname diffnet-class
 #' @export
 dim.diffnet <- function(x) {
   k <- length(with(x, c(colnames(vertex.static.attrs), names(vertex.dyn.attrs[[1]]))))
