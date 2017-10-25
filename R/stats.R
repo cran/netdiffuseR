@@ -65,7 +65,10 @@ dgr <- function(graph, cmode="degree",
   } else if ("network" %in% cls) {
     graph <- as_generic_graph.network(graph)
     dgr.dgCMatrix(graph$graph[[1]], cmode, graph$meta$undirected, self, valued)
-  } else stopifnot_graph(graph)
+  } else if ("matrix.csc" %in% cls) {
+    dgr.dgCMatrix(methods::as(graph, "dgCMatrix"))
+  } else
+    stopifnot_graph(graph)
 
   return(structure(ans, class=c("diffnet_degSeq", class(ans))))
 }
@@ -123,11 +126,23 @@ dgr <- function(graph, cmode="degree",
 #' @param y Ignored
 #' @param freq Logical scalar. When \code{TRUE} the y-axis will reflex counts,
 #'  otherwise densities.
-plot.diffnet_degSeq <- function(x, breaks = min(100L, nrow(x)/5), freq=FALSE, y=NULL, log="xy",
-                                hist.args=list(), slice=ncol(x), xlab="Degree", ylab="Freq",...) {
+plot.diffnet_degSeq <- function(
+  x,
+  breaks = min(100L, nrow(x)/5),
+  freq=FALSE,
+  y=NULL,
+  log="xy",
+  hist.args=list(),
+  slice=ncol(x),
+  xlab="Degree",
+  ylab="Freq",
+  ...
+  ) {
+
   ans <- do.call(hist, c(hist.args, list(x=x[,slice], breaks = breaks, plot=FALSE)))
   with(ans, plot(x=mids,y=if (freq) counts else density,log=log, xlab=xlab, ylab=ylab,...))
   invisible(ans)
+
 }
 
 # @rdname dgr
@@ -255,6 +270,8 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #' @param ... Further arguments passed to \code{\link{struct_equiv}} (only used when
 #' \code{alt.graph="se"}).
 #' @param groupvar Passed to \code{\link{struct_equiv}}.
+#' @param lags Integer scalar. When different from 0, the resulting exposure
+#' matrix will be the lagged exposure as specified (see examples).
 #' @details
 #' Exposure is calculated as follows:
 #'
@@ -319,6 +336,18 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #'  (2nd ed.). Cresskill N.J.: Hampton Press.
 #'
 #' @examples
+#' # Calculating lagged exposure -----------------------------------------------
+#'
+#' set.seed(8)
+#' graph <- rdiffnet(20, 4)
+#'
+#' expo0 <- exposure(graph)
+#' expo1 <- exposure(graph, lags = 1)
+#'
+#' # These should be equivalent
+#' stopifnot(all(expo0[, -4] == expo1[, -1])) # No stop!
+#'
+#'
 #' # Calculating the exposure based on Structural Equivalence ------------------
 #' set.seed(113132)
 #' graph <- rdiffnet(100, 10)
@@ -427,7 +456,7 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #' @name exposure
 NULL
 
-#
+# Workhorse of exposure plotting
 .exposure <- function(graph, cumadopt, attrs, outgoing, valued, normalized, self) {
 
   # Getting the parameters
@@ -455,13 +484,42 @@ NULL
 # library(microbenchmark)
 # microbenchmark(.exposure, netdiffuseR:::exposure_cpp)
 
+check_lags <- function(npers, lags) {
+
+  # Checking length
+  if (length(lags) != 1L)
+    stop("-lags- should be a scalar (length 1). Right now it has lenght ",
+         length(lags))
+
+  # Checking class
+  lags <- as.integer(lags)
+  if (is.na(lags))
+    stop("-lags- cannot be NA. It should be an integer scalar.")
+
+  # Should fit the range of data. A lag cannot be greater than npers.
+  # it has to be strictly smaller
+  if (abs(lags) >= npers)
+    stop("-abs(lags)- cannot be greater than ",npers-1L,". Right now lags=",lags,".")
+
+  lags
+
+}
+
 #' @export
 #' @rdname exposure
-exposure <- function(graph, cumadopt, attrs = NULL, alt.graph=NULL,
-                     outgoing=getOption("diffnet.outgoing", TRUE),
-                     valued=getOption("diffnet.valued", FALSE), normalized=TRUE,
-                     groupvar=NULL, self=getOption("diffnet.self"),
-                     ...) {
+exposure <- function(
+  graph,
+  cumadopt,
+  attrs      = NULL,
+  alt.graph  = NULL,
+  outgoing   = getOption("diffnet.outgoing", TRUE),
+  valued     = getOption("diffnet.valued", FALSE),
+  normalized = TRUE,
+  groupvar   = NULL,
+  self       = getOption("diffnet.self"),
+  lags       = 0L,
+  ...
+  ) {
 
   # Checking diffnet attributes
   if (length(attrs) == 1 && inherits(attrs, "character")) {
@@ -523,7 +581,7 @@ exposure <- function(graph, cumadopt, attrs = NULL, alt.graph=NULL,
 
       if (inherits(alt.graph, "dgCMatrix")) {
         warning("When -alt.graph- is static, will be repeated \"t\" times to fit the data.")
-        alt.graph <- lapply(1:length(graph), function(x) alt.graph)
+        alt.graph <- replicate(nslices(graph), alt.graph)
       }
 
       if (!valued)
@@ -534,56 +592,20 @@ exposure <- function(graph, cumadopt, attrs = NULL, alt.graph=NULL,
 
   }
 
-  cls <- class(graph)
-  if ("array" %in% cls) {
-    exposure.array(graph, cumadopt, attrs, outgoing, valued, normalized, self)
-  } else if ("list" %in% cls) {
-    exposure.list(graph, cumadopt, attrs, outgoing, valued, normalized, self)
-  #} else if ("diffnet" %in% cls) {
-  #  exposure.list(graph, cumadopt, attrs, outgoing, valued, normalized, self)
+  # Checking lags
+  lags <- check_lags(nslices(graph), lags)
+
+  if (is.array(graph) | is.list(graph)) {
+    exposure.list(as_spmat(graph), cumadopt, attrs, outgoing, valued, normalized,
+                  self, lags)
   } else stopifnot_graph(graph)
-}
-
-# @rdname exposure
-# @export
-exposure.array <- function(
-  graph, cumadopt, attrs,
-  outgoing, valued, normalized, self) {
-
-  # Preparing the data
-  n <- nrow(graph)
-  t <- dim(graph)[3]
-  graphl <- vector("list", t)
-  for (i in 1:t)
-    graphl[[i]] <- methods::as(graph[,,i], "dgCMatrix")
-
-  # attrs can be either
-  #  degree, indegree, outdegree, or a user defined vector.
-  #  by default is user equal to 1
-  da <- dim(attrs)
-  if (!length(da)) stop("-attrs- must be a matrix of size n by T.")
-  if (any(da != dim(cumadopt))) stop("Incorrect size for -attrs-. ",
-                                     "It must be of size that -cumadopt-.")
-
-  # Dimnames
-  rn <- rownames(cumadopt)
-  if (!length(rn)) rn <- 1:nrow(cumadopt)
-
-  tn <- colnames(cumadopt)
-  if (!length(tn)) tn <- 1:ncol(cumadopt)
-
-  # Calculating the exposure, and assigning names
-  output <- exposure_for(graphl, cumadopt, attrs, outgoing, valued, normalized,
-                         self)
-  dimnames(output) <- list(rn, tn)
-  output
 }
 
 # @rdname exposure
 # @export
 exposure.list <- function(
   graph, cumadopt, attrs,
-  outgoing, valued, normalized, self) {
+  outgoing, valued, normalized, self, lags) {
 
   # attrs can be either
   #  degree, indegree, outdegree, or a user defined vector.
@@ -593,33 +615,31 @@ exposure.list <- function(
   if (any(da != dim(cumadopt))) stop("Incorrect size for -attrs-. ",
                                      "It must be of size that -cumadopt-.")
 
-  n <- nrow(graph[[1]])
-  t <- length(graph)
-
-  # Coercing into dgCMatrices
-  test <- !sapply(graph, inherits, what="dgCMatrix")
-  if (any(test))
-    graph[which(test)] <- lapply(graph[which(test)],
-                                 function(x) methods::as(x, "dgCMatrix"))
+  add_dimnames.mat(cumadopt)
 
   output <- exposure_for(graph, cumadopt, attrs, outgoing, valued, normalized,
-                         self)
+                         self, lags)
 
-  rn <- rownames(cumadopt)
-  if (!length(rn)) rn <- 1:nrow(cumadopt)
-
-  tn <- colnames(cumadopt)
-  if (!length(tn)) tn <- 1:ncol(cumadopt)
-
-  dimnames(output) <- list(rn, tn)
+  dimnames(output) <- dimnames(cumadopt)
   output
+
 }
 
-exposure_for <- function(graph, cumadopt, attrs, outgoing, valued, normalized, self) {
+exposure_for <- function(
+  graph, cumadopt, attrs, outgoing, valued, normalized,
+  self, lags) {
+
   out <- matrix(nrow = nrow(cumadopt), ncol = ncol(cumadopt))
-  for (i in 1:nslices(graph))
-    out[,i]<- .exposure(graph[[i]], cumadopt[,i,drop=FALSE], attrs[,i,drop=FALSE],
-                 outgoing, valued, normalized, self)
+
+  if (lags >= 0L) {
+    for (i in 1:(nslices(graph) - lags))
+      out[,i+lags]<- .exposure(graph[[i]], cumadopt[,i,drop=FALSE], attrs[,i,drop=FALSE],
+                               outgoing, valued, normalized, self)
+  } else {
+    for (i in (1-lags):nslices(graph))
+      out[,i+lags]<- .exposure(graph[[i]], cumadopt[,i,drop=FALSE], attrs[,i,drop=FALSE],
+                               outgoing, valued, normalized, self)
+  }
   return(out)
 }
 
@@ -692,7 +712,7 @@ cumulative_adopt_count <- function(obj) {
 #' @param no.plot Logical scalar. When TRUE, suppress plotting (only returns hazard rates).
 #' @param add Logical scalar. When TRUE it adds the hazard rate to the current plot.
 #' @param ylim Numeric vector. See \code{\link{plot}}.
-#' @param ... further arguments to be passed to \code{\link{par}}
+#' @param ... further arguments to be passed to the method.
 #' @details
 #'
 #' This function computes hazard rate, plots it and returns the hazard rate vector
@@ -780,12 +800,11 @@ hazard_rate <- function(obj, no.plot=FALSE, include.grid=TRUE, ...) {
 
 #' @rdname hazard_rate
 #' @export
-plot_hazard <- function(x,main="Hazard Rate", xlab="Time", ylab="Hazard Rate", type="b",
-                        include.grid=TRUE, bg="lightblue", add=FALSE, ylim=c(0,1), pch=21,
-                        ...) {
+plot_hazard <- function(x, ...) {
   hr <- hazard_rate(x, no.plot = TRUE)
-  plot.diffnet_hr(x=hr, main=main, xlab=xlab, ylab=ylab, type=type, include.grid=include.grid, bg=bg,
-                  add=add, ylim=ylim, pch=pch, ...)
+
+  dots <- list(...)
+  do.call(plot.diffnet_hr, c(list(x=hr), dots))
 }
 
 #' @rdname hazard_rate
@@ -1051,12 +1070,13 @@ plot.diffnet_adopters <- function(x, y = NULL,
 #' between pairs of vertices that are connected (otherwise skip).
 #'
 #' The function \code{vertex_covariate_dist} is the simil of \code{\link{dist}}
-#' and returns p-norms. It is implemented as follows (for each pair of vertices):
+#' and returns p-norms (Minkowski distance). It is implemented as follows (for
+#' each pair of vertices):
 #'
 #' \deqn{%
-#' D_{ij} = \left(\sum_{k=1}^K (X_{ik} - X_{jk})^{p} \right)^{1/p}\mbox{ if }graph_{i,j}\neq 0
+#' D_{ij} = \left(\sum_{k=1}^K \left|X_{ik} - X_{jk}\right|^{p} \right)^{1/p}\mbox{ if }graph_{i,j}\neq 0
 #' }{%
-#' D(i,j) = [\sum_k (X(i,k) - X(j,k))^p]^(1/p)  if graph(i,j) != 0
+#' D(i,j) = [\sum_k abs(X(i,k) - X(j,k))^p]^(1/p)  if graph(i,j) != 0
 #' }
 #'
 #' In the case of mahalanobis distance, for each pair of vertex \eqn{(i,j)}, the
@@ -1102,8 +1122,9 @@ plot.diffnet_adopters <- function(x, y = NULL,
 #' Retrieved 20:31, September 27, 2016, from
 #' \url{https://en.wikipedia.org/w/index.php?title=Mahalanobis_distance&oldid=741488252}
 #' @author George G. Vega Yon
-#' @aliases p-norm mahalanobis
+#' @aliases p-norm mahalanobis minkowski
 #' @family statistics
+#' @family dyadic-level comparison functions
 #' @seealso \code{\link[stats:mahalanobis]{mahalanobis}} in the stats package.
 NULL
 
@@ -1133,14 +1154,6 @@ vertex_mahalanobis_dist <- function(graph, X, S) {
 
   return(ans)
 }
-
-
-#' Useful functions for binary comparisons in sparse matrices
-#'
-#' @details ASD
-#'
-#' @name binary-functions
-NULL
 
 #' Non-zero element-wise comparison between two sparse matrices
 #'
@@ -1214,15 +1227,17 @@ NULL
 #'
 #' microbenchmark::microbenchmark(
 #'   diffnet = matrix_compare(A, B, compfun),
-#'   R       = ifelse(Am > Bm, Am, Bm),
+#'   R       = matrix(ifelse(Am > Bm, Am, Bm), ncol=ncol(Am)),
 #'   times   = 10
 #' )
 #' # Unit: milliseconds
-#' #    expr       min        lq      mean    median       uq      max neval cld
-#' # diffnet  349.1731  350.8051  360.7358  353.5629  354.787  432.450    10  a
-#' #       R 1333.9946 1406.1971 2249.7132 1515.0995 1976.028 7691.428    10   b
+#' #    expr       min        lq      mean    median        uq      max neval
+#' # diffnet  352.7989  355.0193  583.5366  357.7138  364.7604 2493.914    10
+#' #       R 1648.9607 1744.6762 2491.2435 1947.4344 2729.1274 6260.011    10
 #'
 #' }
+#' @aliases binary-functions
+#' @family dyadic-level comparison functions
 matrix_compare <- function(A, B, fun) {
 
   # Checking objects class

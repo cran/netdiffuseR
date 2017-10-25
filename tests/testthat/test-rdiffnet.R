@@ -80,3 +80,27 @@ test_that("All should be equal!", {
 
   expect_equal(net1, net2)
 })
+
+
+test_that("Error and warning on rdiffnet", {
+
+  set.seed(111)
+
+  expect_error(rdiffnet(100, 5, threshold.dist = rep(10,10)), "Incorrect length")
+  expect_error(rdiffnet(100, 5, threshold.dist = rep(10,100)), "No diffusion")
+  expect_warning(rdiffnet(100, 5, threshold.dist = rep(10,100), stop.no.diff = FALSE), "No diffusion")
+
+})
+
+test_that("Simulation study", {
+
+  set.seed(1)
+  f <- function(x) mean(x$toa, na.rm=TRUE)
+  ans0 <- suppressWarnings(rdiffnet_multiple(5, f, n=50, t=4, stop.no.diff=FALSE))
+
+  set.seed(1)
+  ans1 <- suppressWarnings(sapply(1:5, function(x) f(rdiffnet(n=50, t=4, stop.no.diff=FALSE))))
+
+  expect_equal(ans0, ans1)
+
+})

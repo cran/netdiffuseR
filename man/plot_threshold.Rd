@@ -2,24 +2,36 @@
 % Please edit documentation in R/diffnet-methods.r
 \name{plot_threshold}
 \alias{plot_threshold}
+\alias{plot_threshold.diffnet}
+\alias{plot_threshold.array}
+\alias{plot_threshold.default}
 \title{Threshold levels through time}
 \usage{
-plot_threshold(graph, expo, toa, include_censored = FALSE, t0 = min(toa,
-  na.rm = TRUE), attrs = NULL, undirected = getOption("diffnet.undirected"),
-  no.contemporary = TRUE, main = "Time of Adoption by Network Threshold",
-  xlab = "Time", ylab = "Threshold", vertex.cex = "degree",
-  vertex.col = rgb(0.3, 0.3, 0.8, 0.5), vertex.label = "",
-  vertex.lab.pos = NULL, vertex.lab.cex = 1, vertex.lab.adj = c(0.5, 0.5),
-  vertex.lab.col = rgb(0.3, 0.3, 0.8, 0.9), vertex.sides = 40L,
-  vertex.rot = 0, edge.width = 2, edge.col = rgb(0.6, 0.6, 0.6, 0.1),
-  arrow.length = 0.2, include.grid = TRUE, bty = "n",
-  vertex.bcol = vertex.col, jitter.factor = c(1, 0),
+plot_threshold(graph, expo, ...)
+
+\method{plot_threshold}{diffnet}(graph, expo, ...)
+
+\method{plot_threshold}{array}(graph, expo, ...)
+
+\method{plot_threshold}{default}(graph, expo, toa, include_censored = FALSE,
+  t0 = min(toa, na.rm = TRUE), attrs = NULL,
+  undirected = getOption("diffnet.undirected"), no.contemporary = TRUE,
+  main = "Time of Adoption by\\nNetwork Threshold", xlab = "Time",
+  ylab = "Threshold", vertex.size = "degree",
+  vertex.color = grDevices::adjustcolor("steelblue", 0.8),
+  vertex.label = "", vertex.label.pos = NULL, vertex.label.cex = 1,
+  vertex.label.adj = c(0.5, 0.5), vertex.label.color = NULL,
+  vertex.sides = 40L, vertex.rot = 0, edge.width = 2, edge.color = NULL,
+  arrow.length = nslices(graph)/80, include.grid = TRUE,
+  vertex.frame.color = NULL, bty = "n", jitter.factor = c(1, 0),
   jitter.amount = c(0.25, 0), xlim = NULL, ylim = NULL, ...)
 }
 \arguments{
 \item{graph}{A dynamic graph (see \code{\link{netdiffuseR-graphs}}).}
 
 \item{expo}{\eqn{n\times T}{n * T} matrix. Esposure to the innovation obtained from \code{\link{exposure}}}
+
+\item{...}{Additional arguments passed to \code{\link{plot}}.}
 
 \item{toa}{Integer vector of length \eqn{n} with the times of adoption.}
 
@@ -40,19 +52,19 @@ plot_threshold(graph, expo, toa, include_censored = FALSE, t0 = min(toa,
 
 \item{ylab}{Character scalar. y-axis label.}
 
-\item{vertex.cex}{Numeric vector of size \eqn{n}. Relative size of the vertices.}
+\item{vertex.size}{Numeric vector of size \eqn{n}. Relative size of the vertices.}
 
-\item{vertex.col}{Either a vector of size \eqn{n} or a scalar indicating colors of the vertices.}
+\item{vertex.color}{Either a vector of size \eqn{n} or a scalar indicating colors of the vertices.}
 
 \item{vertex.label}{Character vector of size \eqn{n}. Labels of the vertices.}
 
-\item{vertex.lab.pos}{Integer value to be passed to \code{\link{text}} via \code{pos}.}
+\item{vertex.label.pos}{Integer value to be passed to \code{\link{text}} via \code{pos}.}
 
-\item{vertex.lab.cex}{Either a numeric scalar or vector of size \eqn{n}. Passed to \code{text}.}
+\item{vertex.label.cex}{Either a numeric scalar or vector of size \eqn{n}. Passed to \code{text}.}
 
-\item{vertex.lab.adj}{Passed to \code{\link{text}}.}
+\item{vertex.label.adj}{Passed to \code{\link{text}}.}
 
-\item{vertex.lab.col}{Passed to \code{\link{text}}.}
+\item{vertex.label.color}{Passed to \code{\link{text}}.}
 
 \item{vertex.sides}{Either a vector of size \eqn{n} or a scalar indicating the
 number of sides of each vertex (see details).}
@@ -62,15 +74,15 @@ rotation in radians of each vertex (see details).}
 
 \item{edge.width}{Numeric. Width of the edges.}
 
-\item{edge.col}{Character. Color of the edges.}
+\item{edge.color}{Character. Color of the edges.}
 
 \item{arrow.length}{Numeric value to be passed to \code{\link{arrows}}.}
 
 \item{include.grid}{Logical. When TRUE, the grid of the graph is drawn.}
 
-\item{bty}{See \code{\link{par}}.}
+\item{vertex.frame.color}{Either a vector of size \eqn{n} or a scalar indicating colors of vertices' borders.}
 
-\item{vertex.bcol}{Either a vector of size \eqn{n} or a scalar indicating colors of vertices' borders.}
+\item{bty}{See \code{\link{par}}.}
 
 \item{jitter.factor}{Numeric vector of size 2 (for x and y) passed to \code{\link{jitter}}.}
 
@@ -79,8 +91,6 @@ rotation in radians of each vertex (see details).}
 \item{xlim}{Passed to \code{\link{plot}}.}
 
 \item{ylim}{Passed to \code{\link{plot}}.}
-
-\item{...}{Additional arguments passed to \code{\link{plot}}.}
 }
 \description{
 Draws a graph where the coordinates are given by time of adoption, x-axis,
@@ -91,7 +101,7 @@ When \code{vertex.label=NULL} the function uses vertices ids as labels.
 By default \code{vertex.label=""} plots no labels.
 
 Vertices are drawn using an internal function for generating polygons.
-Polygons are inscribed in a circle of radius \code{vertex.cex}, and can be
+Polygons are inscribed in a circle of radius \code{vertex.size}, and can be
 rotated using \code{vertex.rot}. The number of sides of each polygon
 is set via \code{vertex.sides}.
 }
@@ -111,7 +121,7 @@ expos <- exposure(graph, adopt$cumadopt)
 plot_threshold(graph, expos, toa)
 
 # Calculating degree (for sizing the vertices)
-plot_threshold(graph, expos, toa, vertex.cex = "indegree")
+plot_threshold(graph, expos, toa, vertex.size = "indegree")
 
 }
 \seealso{

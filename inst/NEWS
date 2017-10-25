@@ -1,5 +1,63 @@
 
 
+CHANGES IN NETDIFFUSER VERSION 1.19.0 (2017-10-16)
+
+
+New functions and features
+
+-   rdiffnet now allows passing scalars for threshold.dist, more over,
+    the user can also ask the function to just warn when there is no
+    diffusion instead of returning with error.
+
+-   plot.diffnet, plot_diffnet, plot.diffnet_mentor, and plot_diffnet2
+    use igraph for plotting. Also, users can now pass "degree" for
+    -vertex.size- (vertex.cex not used anymore), allowing to
+    "automatically" scale vertices by (in/out/.)degree. Also, plotting
+    arguments like vertex.* or edge.* are standarized so these
+    match igraph.
+
+-   plot_diffnet has a new parameter: background.
+
+-   rdiffnet_multiple, a wrapper of rdiffnet, allows performing
+    simulations studies by running simulating multiple diffusion
+    networks using rdiffnet.
+
+-   exposure has a new parameter: lags. By default lags = 0, returns a
+    lagged exposure matrix.
+
+
+Bug fixes
+
+-   igraph_to_diffnet was failing with the graph had no weights.
+
+-   drop_isolated was not behaving well for diffnet objects.
+
+-   vertex_covariate_dist was incorrectly specified. Only the default
+    p=2 were OK. Now fixed and the tests/ folder includes a tests
+    on this.
+
+-   plot_diffnet2 was not passing color.ramp to drawColorKey. Now fixed.
+
+-   plot.diffnet_mentor had a bug. Uncesary permutation of vertices was
+    done, but it actually had no visible effect. Similar problem was
+    corrected in diffnet_to_igraph, and other plot methods using igraph
+    for plotting.
+
+
+Other changes
+
+-   Replacing some C++ functions by R functions in cases in which there
+    was no decrease in performance.
+
+-   plot_diffnet function now has smaller margins, so looks
+    more appealing.
+
+-   New examples in vignettes "netdiffuseR showcase: Medical
+    Innovations", and "Simulating diffusion networks: Using the
+    rdiffnet function".
+
+
+
 CHANGES IN NETDIFFUSER VERSION 1.18.1 (2017-07-22)
 
 

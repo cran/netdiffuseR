@@ -3,7 +3,6 @@
 #' Simulates a diffusion network by creating a random dynamic network and
 #' adoption threshold levels.
 #'
-#' @export
 #' @param n Integer scalar. Number of vertices.
 #' @param t Integer scalar. Time length.
 #' @param seed.nodes Either a character scalar or a vector. Type of seed nodes (see details).
@@ -14,10 +13,13 @@
 #' (see \code{\link{rewire_graph}}).
 #' @param rewire.args List. Arguments to be passed to \code{\link{rewire_graph}}.
 #' @param threshold.dist Either a function to be applied via \code{\link{sapply}},
-#' or a vector/matrix with \eqn{n} elements. Sets the adoption threshold for each node.
+#' a numeric scalar, or a vector/matrix with \eqn{n} elements. Sets the adoption
+#' threshold for each node.
 #' @param exposure.args List. Arguments to be passed to \code{\link{exposure}}.
 #' @param name Character scalar. Passed to \code{\link{as_diffnet}}.
 #' @param behavior Character scalar. Passed to \code{\link{as_diffnet}}.
+#' @param stop.no.diff Logical scalar. When \code{TRUE}, the function will return
+#' with error if there was no diffusion. Otherwise it throws a warning.
 #' @return A random \code{\link{diffnet}} class object.
 #' @family simulation functions
 #' @details
@@ -61,7 +63,7 @@
 #' \code{\link{rewire_graph}} function as \eqn{G(t) = R(G(t-1))}, where \eqn{R}
 #' is the rewiring algorithm.
 #'
-#' The argument \code{threshold.dist} sets the threshold for each vertex in the graph.
+#' If a function, the argument \code{threshold.dist} sets the threshold for each vertex in the graph.
 #' It is applied using \code{sapply} as follows
 #'
 #' \preformatted{
@@ -72,6 +74,22 @@
 #'
 #' If \code{seed.graph} is provided, no random graph is generated and the simulation
 #' is applied using that graph instead.
+#'
+#' \code{rewire.args} has the following default options:
+#'
+#' \tabular{ll}{
+#'   \code{p}          \tab \code{.1} \cr
+#'   \code{undirected} \tab \code{getOption("diffnet.undirected", FALSE)} \cr
+#'   \code{self}       \tab \code{getOption("diffnet.self", FALSE)}
+#' }
+#'
+#' \code{exposure.args} has the following default options:
+#'
+#' \tabular{ll}{
+#'   \code{outgoing} \tab \code{TRUE} \cr
+#'   \code{valued} \tab \code{getOption("diffnet.valued", FALSE)} \cr
+#'   \code{normalized} \tab \code{TRUE}
+#' }
 #'
 #' @examples
 #' # Asimple example -----------------------------------------------------------
@@ -88,32 +106,53 @@
 #' newMI <- rdiffnet(seed.graph = medInnovationsDiffNet$graph,
 #'  threshold.dist = threshold(medInnovationsDiffNet), rewire=FALSE)
 #'
+#'
 #' @author George G. Vega Yon
-rdiffnet <- function(
-  n,
-  t,
-  seed.nodes="random",
-  seed.p.adopt=0.05,
-  seed.graph="scale-free",
-  rgraph.args=list(),
-  rewire=TRUE,
-  rewire.args=list(
-    p=.1,
-    undirected= getOption("diffnet.undirected", FALSE),
-    self = getOption("diffnet.self", FALSE)
-    ),
-  threshold.dist=function(x) runif(1),
-  exposure.args=list(
-    outgoing=TRUE,
-    valued=getOption("diffnet.valued", FALSE),
-    normalized=TRUE
-    ),
-  name="A diffusion network",
-  behavior="Random contagion"
-  ) {
+#' @name rdiffnet
+NULL
 
-  # Step 0.0: Creating the network seed ----------------------------------------
-  # Checking the class of the seed.graph
+rdiffnet_make_threshold <- function(x, n) {
+
+  # Using sapply to compute the threshold
+  if (inherits(x, "function")) {
+
+    thr <- sapply(1:n, x)
+
+  } else if ((length(x)==1) && is.numeric(x)) {
+
+    thr <- rep(x, n)
+
+  } else {
+    # Setting depending on class
+    if (any(class(x) %in% c("data.frame", "matrix"))) {
+
+      thr <- as.vector(as.matrix(x))
+
+      # Must match the length of n
+      if (length(thr) != n)
+        stop("Incorrect length for -threshold.dist- (",length(x),")",
+             ". It should be a vector of length ",n,".")
+
+    } else if (is.vector(x)) {
+
+      thr <- x
+
+      # Must match the length of n
+      if (length(thr) != n)
+        stop("Incorrect length for -threshold.dist- (",length(x),")",
+             ". It should be a vector of length ",n,".")
+
+    } else {
+
+      stop("-threshold.dist- must be either a numeric vector of length -n-, a numeric scalar, or a function.")
+
+    }
+  }
+
+  thr
+}
+
+rdiffnet_check_seed_graph <- function(seed.graph, rgraph.args, t, n) {
   test <- class(seed.graph)
   if ("function" %in% test) {
     # Does it returns a graph
@@ -135,17 +174,25 @@ rdiffnet <- function(
       sgraph <- test
     }
 
-  # In the case of calling a function
+    # In the case of calling a function
   } else if ("character" %in% test) {
+
+    # Scale-free networks ------------------------------------------------------
     if (seed.graph == "scale-free") {
+
       if (!length(rgraph.args$m0))
         rgraph.args$t <- n-1L
 
       sgraph <- do.call(rgraph_ba, rgraph.args)
+
+      # Bernoulli graphs ---------------------------------------------------------
     } else if (seed.graph == "bernoulli") {
+
       rgraph.args$n <- n
 
       sgraph <- do.call(rgraph_er, rgraph.args)
+
+      # Small-world network ------------------------------------------------------
     } else if (seed.graph == "small-world") {
 
       rgraph.args$n <- n
@@ -153,6 +200,7 @@ rdiffnet <- function(
       if (!length(rgraph.args$p)) rgraph.args$p <- .1
 
       sgraph <- do.call(rgraph_ws, rgraph.args)
+
     } else
       stop("Invalid -seed.graph-. It should be either ",
            "'scale-free\', \'bernoulli\' or \'small-world\'.")
@@ -161,19 +209,131 @@ rdiffnet <- function(
     graph <- rep(list(sgraph), t)
 
   } else if (test %in% c("matrix", "dgCMatrix", "array")) {
+
     # If not dgCMatrix
-    if ("array" %in% test) {
+    if ("array" %in% test)
       sgraph <- apply(seed.graph, 3, function(x) methods::as(x, "dgCMatrix"))
-    } else {
+    else
       sgraph <- methods::as(seed.graph, "dgCMatrix")
-    }
+
   } else if ("list" %in% test) {
+
     sgraph <- seed.graph
+
   } else if ("diffnet" %in% test) {
+
     sgraph <- seed.graph$graph
-  }else {
+
+  } else
     stop("Invalid argument for -seed.graph-. No support for objects of class -",test,"-.")
+
+  sgraph
+}
+
+#' @rdname rdiffnet
+#' @export
+#' @param R Integer scalar. Number of simulations to be done.
+#' @param statistic A Function to be applied to each simulated diffusion network.
+#' @param ... Further arguments to be passed to \code{rdiffnet}.
+#' @param ncpus Integer scalar. Number of processors to be used (see details).
+#' @param cl An object of class \code{\link[parallel:makeCluster]{c("SOCKcluster", "cluster")}}
+#' (see details).
+#' @details
+#' The function \code{rdiffnet_multiple} is a wrapper of \code{rdiffnet} wich allows
+#' simulating multiple diffusion networks with the same parameters and apply
+#' the same function to all of them. This function is designed to allow the user
+#' to perform larger simulation studies in which the distribution of a particular
+#' statistic is observed.
+#'
+#' When \code{cl} is provided, then simulations are done via
+#' \code{\link[parallel:parSapply]{parSapply}}. If \code{ncpus} is greater than
+#' 1, then the function creates a cluster via \code{\link[parallel:makeCluster]{makeCluster}}
+#' which is stopped (removed) once the process is complete.
+#'
+#' @return \code{rdiffnet_multiple} returns either a vector or an array depending
+#' on what \code{statistic} is (see \code{\link{sapply}} and
+#' \code{\link[parallel:parSapply]{parSapply}}).
+#'
+#' @examples
+#' # Simulation study comparing the diffusion with diff sets of seed nodes -----
+#'
+#' # Random seed nodes
+#' set.seed(1)
+#' ans0 <- rdiffnet_multiple(R=50, statistic=function(x) sum(!is.na(x$toa)),
+#'     n = 100, t = 4, seed.nodes = "random", stop.no.diff=FALSE)
+#'
+#' # Central seed nodes
+#' set.seed(1)
+#' ans1 <- rdiffnet_multiple(R=50, statistic=function(x) sum(!is.na(x$toa)),
+#'     n = 100, t = 4, seed.nodes = "central", stop.no.diff=FALSE)
+#'
+#' boxplot(cbind(Random = ans0, Central = ans1), main="Number of adopters")
+rdiffnet_multiple <- function(
+  R,
+  statistic,
+  ...,
+  ncpus = 1L,
+  cl    = NULL
+) {
+
+  # Checking the type of answer that it returns
+
+
+  # Calling parallel
+  if ((ncpus > 1) | length(cl)) {
+
+    # Creating the cluster
+    if (!length(cl)) {
+      cl <- parallel::makeCluster(ncpus)
+      on.exit(parallel::stopCluster(cl))
+    }
+
+    # Calling the function
+    parallel::parSapply(cl, X=seq_len(R), function(i, statistic, ...) {
+      statistic(netdiffuseR::rdiffnet(...))
+    }, statistic = statistic, ...)
+
+  } else {
+
+    # If no parallel apply
+    sapply(X=seq_len(R), function(i, statistic, ...) {
+      statistic(netdiffuseR::rdiffnet(...))
+    }, statistic = statistic, ...)
   }
+
+}
+
+#' @rdname rdiffnet
+#' @export
+rdiffnet <- function(
+  n,
+  t,
+  seed.nodes     = "random",
+  seed.p.adopt   = 0.05,
+  seed.graph     = "scale-free",
+  rgraph.args    = list(),
+  rewire         = TRUE,
+  rewire.args    = list(),
+  threshold.dist = runif(n),
+  exposure.args  = list(),
+  name           = "A diffusion network",
+  behavior       = "Random contagion",
+  stop.no.diff   = TRUE
+  ) {
+
+  # Checking options
+  if (!length(rewire.args[["p"]])) rewire.args[["p"]] <- .1
+  if (!length(rewire.args[["undirected"]])) rewire.args[["undirected"]] <- getOption("diffnet.undirected", FALSE)
+  if (!length(rewire.args[["self"]])) rewire.args[["self"]] <- getOption("diffnet.self", FALSE)
+
+  if (!length(exposure.args[["outgoing"]])) exposure.args[["outgoing"]] <- TRUE
+  if (!length(exposure.args[["valued"]])) exposure.args[["valued"]] <- getOption("diffnet.valued", FALSE)
+  if (!length(exposure.args[["normalized"]])) exposure.args[["normalized"]] <- TRUE
+
+  # Step 0.0: Creating the network seed ----------------------------------------
+  # Checking the class of the seed.graph
+  sgraph <- rdiffnet_check_seed_graph(seed.graph, rgraph.args, t, n)
+
 
   # Checking baseline graph --------------------------------------------------
   meta <- classify_graph(sgraph)
@@ -185,84 +345,77 @@ rdiffnet <- function(
   }
   if (missing(n)) n <- meta$n
 
-  # Checking dimensions
-  test <- class(sgraph)
-  if ("list" %in% test) {
-    # Checking if all the graphs follow the condition
-    test2 <- sapply(sgraph, function(x) inherits(x, "dgCMatrix") && all(dim(x) == c(n,n)) )
-    if (any(!test2)) stop("-seed.graph- should be a list of 'dgCMatrices' of size ", n, "x", n,".",
-                          " The following elements are invalid:\n\t", paste0(which(!test2), collapse=", "), ".")
-  }
-
   # If static, t must be provided, otherwise t should be missing
   if (meta$nper == 1) {
-    if (missing(t)) {
+
+    if (missing(t))
       stop("When -seed.graph- is static, -t- must be provided.")
-    } else {
+    else
       sgraph <- rep(list(sgraph), t)
-    }
+
   } else {
-    if (!missing(t)) warning("When -seed.graph- is dynamic, -t- shouldn't be provided.")
+
+    if (!missing(t))
+      warning("When -seed.graph- is dynamic, -t- shouldn't be provided.")
+
     t <- meta$nper
+
   }
 
   # Step 0.1: Rewiring or not ------------------------------------------------
 
   # Rewiring
-  if (rewire) sgraph <- do.call(rewire_graph, c(list(graph=sgraph), rewire.args))
+  if (rewire)
+    sgraph <- do.call(rewire_graph, c(list(graph=sgraph), rewire.args))
+
+  sgraph <- lapply(sgraph, `attr<-`, which="undirected", value=NULL)
 
   # Number of initial adopters
-  if (n*seed.p.adopt < 1) warning("Set of initial adopters set to 1.")
+  if ((seed.p.adopt > 1) | (seed.p.adopt < 0)) {
+    stop("The proportion of initial adopters should be a number in [0,1]")
+  }
+  if (n*seed.p.adopt < 1)
+    warning("Set of initial adopters set to 1.")
+
   n0 <- max(1, n*seed.p.adopt)
 
   # Step 0.1: Setting the seed nodes -------------------------------------------
   cumadopt <- matrix(0L, ncol=t, nrow=n)
-  toa   <- matrix(NA, ncol=1, nrow= n)
+  toa      <- matrix(NA, ncol=1, nrow= n)
 
   if (length(seed.nodes) == 1) {
+
     if (seed.nodes %in% c("central","marginal")) {
+
+      # Creating a degree ranking
       d <- dgr(sgraph)[,1,drop=FALSE]
       decre <- ifelse(seed.nodes == "central", TRUE, FALSE)
       d <- rownames(d[order(d, decreasing = decre),,drop=FALSE])
       d <- d[1:floor(n0)]
       d <- as.numeric(d)
+
     } else if (seed.nodes == "random") {
+
       d <- sample.int(n, floor(n0))
+
     } else
       stop("Unsupported -seed.nodes- value. It must be either \"central\", \"marginal\", or \"random\"")
+
   } else if (!inherits(seed.nodes, "character")) {
+
     d <- seed.nodes
-  } else stop("Unsupported -seed.nodes- value. See the manual for references.")
+
+  } else
+    stop("Unsupported -seed.nodes- value. See the manual for references.")
 
   # Setting seed nodes via vector
-  toa[d] <- 1L
+  toa[d]       <- 1L
   cumadopt[d,] <- 1L
 
   # Step 3.0: Thresholds -------------------------------------------------------
-  if (inherits(threshold.dist, "function")) thr <- sapply(1:n, threshold.dist)
-  else {
-    # Setting depending on class
-    if (any(class(threshold.dist) %in% c("data.frame", "matrix"))) {
-      thr <- as.vector(as.matrix(threshold.dist))
+  thr <- rdiffnet_make_threshold(threshold.dist, n)
 
-      # Must match the length of n
-      if (length(thr) != n)
-        stop("Incorrect length for -threshold.dist- (",length(threshold.dist),")",
-             ". It should be a vector of length ",n,".")
-    } else if (is.vector(threshold.dist)) {
-      thr <- threshold.dist
-
-      # Must match the length of n
-      if (length(thr) != n)
-        stop("Incorrect length for -threshold.dist- (",length(threshold.dist),")",
-             ". It should be a vector of length ",n,".")
-    } else {
-      stop("-threshold.dist- must be either a vector of length -n- or a function.")
-    }
-  }
-
-  # Processing times
-
+  # Running the simulation
   for (i in 2:t) {
 
     # Computing exposure
@@ -275,8 +428,12 @@ rdiffnet <- function(
   }
   reachedt <- max(toa, na.rm=TRUE)
 
+  # Checking the result
   if (reachedt == 1) {
-    stop("No diffusion in this network (Ups!) try changing the seed or the parameters.")
+    if (stop.no.diff)
+      stop("No diffusion in this network (Ups!) try changing the seed or the parameters.")
+    else
+      warning("No diffusion in this network.")
   }
 
   # Checking attributes

@@ -1,3 +1,90 @@
+2017-10-23  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/igraph.r: Uncesary permutation + adding undirected.
+	* R/mentor.r: Fixing bug in plotting method. Sorting was wrong.
+	* R/*.r: Idem.
+
+
+2017-10-16  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/stats.R: New argument for exposure.
+	* : Adding new examples in vignettes.
+	* : Getting ready for cran.
+
+
+2017-10-09  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/misc.r: add_dimnames is now based on environments and more general.
+	* R/stats.r: Cleanning code
+
+	* *: Trying to pin down problem with Armadillo 0.8+. Solved.
+
+
+2017-10-02  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/igraph.r: Working on function to set default plot params.
+	* R/rdiffnet-methods.r: Cleaner code.
+
+	* R/rdiffnet.r: New function rdiffnet_multiple.
+
+
+2017-09-22  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/diffnet_methods.r: Keep working on consistency
+	* R/igraph.r: New function to set defaults for any plot function.
+
+
+2017-09-22  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/diffnet-methods.r: Working on plotting methods. Adding arguments
+	  consistency across the package, and fixing some bugs in plot_diffnet
+	  regarding the colors of vertices.
+
+
+2017-09-20  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/misc.r: Fixed bug in compute_size.
+	* R/diffnet-methods.r: Added title to plot_diffnet.
+
+
+2017-09-18  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/diffnet-methods.r: Rewritten plot functions.
+	* R/misc.r: New function to set size according to degree.
+	* R/igraph.r: New set of functions and default (aesthetics).
+
+
+2017-09-15  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/diffnet-methods.r: Making the coding more neat.
+	* R/plot_diffnet2.r: Changing defaults
+
+	* R/rdiffnet.r: Working on way the function is written. Also now
+	  threshold.dist can be a scalar and no diffusion can be ok as well.
+
+
+2017-09-11  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/plot_diffnet2.r: Change name of the file and fixed bug in setting
+	  the color of the colorKey.
+	* R/diffnet-methods.r: Simplifying functions.
+	* R/misc.r: Idem.
+
+
+2017-09-01  George G. Vega Yon <g.vegayon@gmail.com>
+	* src/netdiffuser_extra.cpp: Since atan2 checks the quadrant, 
+	  the angle() function is no longer needed.
+
+
+2017-08-24  George G. Vega Yon <g.vegayon@gmail.com>
+	* : Creating the configure.ac, src/Makevars.in, and cleanup
+	  files so that autoconf sets OpenMP.
+
+
+2017-08-23  George G. Vega Yon <g.vegayon@gmail.com>
+	* R/egonets.R: Working on possible bug reported by CRAN.
+	* R/stats.R: Documentation.
+	* src/Makevars*: Adding OpenMP support via RcppArmadillo update
+	* src/stats.cpp: Fixing bug in vertex_covariate_distance
+	  plus making some speed fixes.
+	* src/rgraph.cpp: More efficient rgraph_ba_cpp.
+ 
+
+2017-07-23  George G. Vega Yon <g.vegayon@gmail.com>
+	* : Working on making the package more light weight.
+	* : Checking included datasets duplicated columns.
+	* : Working on documentation
+
 2017-07-23  George G. Vega Yon <g.vegayon@gmail.com>
 	* src/adjmat.cpp: rewriting egonet_attrs_cpp. Now more efficient
 	  should correct errors produced on windows.

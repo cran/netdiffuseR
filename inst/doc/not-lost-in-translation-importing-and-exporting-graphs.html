@@ -74,7 +74,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 
-<p></p>
+
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
 <ul>
@@ -133,8 +133,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>To use the <code>as_diffnet</code> function we need at least two objects: a <strong>dynamic graph</strong> represented as either an array or a list of adjacency matrices, each of size <span class="math inline">\(n\times n\)</span>, which in our case will be <span class="math inline">\(10\times 10\)</span>, and an integer vector of size <span class="math inline">\(n=10\)</span> which holds each vertex’s <strong>time of adoption</strong>. Lets start by generating the dynamic graph using th <code>edgelist_to_adjmat</code> function:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the edgelist to an adjacency matrix</span>
 adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>(
-  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span>:<span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span>
-  <span class="dt">w          =</span> fakeEdgelist$value, <span class="co"># An optional vector with weights</span>
+  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span>
+  <span class="dt">w          =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># An optional vector with weights</span>
   <span class="dt">undirected =</span> <span class="ot">FALSE</span>,              <span class="co"># In this case, the edgelist is directed</span>
   <span class="dt">t          =</span> <span class="dv">5</span>)                  <span class="co"># We use this option to make 5 replicas of it</span></code></pre></div>
 <pre><code># Warning in edgelist_to_adjmat.matrix(as.matrix(edgelist), w, t0, t1, t, : Some edges a had NA/NULL value on either -times- or -w-:
@@ -152,10 +152,10 @@ fakeEdgelist[<span class="dv">11</span>,,drop=<span class="ot">FALSE</span>]</co
 # 11 202  &lt;NA&gt;     1</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the edgelist to an adjacency matrix (again)</span>
 adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>(
-  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span>:<span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span>
-  <span class="dt">w          =</span> fakeEdgelist$value, <span class="co"># An optional vector with weights</span>
+  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span>
+  <span class="dt">w          =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># An optional vector with weights</span>
   <span class="dt">undirected =</span> <span class="ot">FALSE</span>,              <span class="co"># In this case, the edgelist is directed</span>
-  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>,            <span class="co"># NOTICE THIS NEW ARGUMENT!</span>
+  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>,            <span class="co"># </span><span class="al">NOTICE</span><span class="co"> THIS NEW ARGUMENT!</span>
   <span class="dt">t          =</span> <span class="dv">5</span>)                  <span class="co"># We use this option to make 5 replicas of it</span></code></pre></div>
 <p>As expected, there is no warning. Furthermore, we have told the function that in case of having isolated vertices to keep them, as is in the case of the edge #11 which has the vertex 202. Since we asked the function to create 5 copies of the adjacency matrix, we have a list of length 5 with adjacency matrices. Lets take a look at the first element of this list:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">adjmat[[<span class="dv">1</span>]]</code></pre></div>
@@ -174,7 +174,7 @@ adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the adjacency matrix and edgelist into a diffnet object</span>
 diffnet &lt;-<span class="st"> </span><span class="kw">as_diffnet</span>(
   <span class="dt">graph               =</span> adjmat,         <span class="co"># Passing a dynamic graph</span>
-  <span class="dt">toa                 =</span> fakesurvey$toa, <span class="co"># This is required</span>
+  <span class="dt">toa                 =</span> fakesurvey<span class="op">$</span>toa, <span class="co"># This is required</span>
   <span class="dt">vertex.static.attrs =</span> fakesurvey      <span class="co"># Is is optional</span>
   )
 
@@ -194,18 +194,18 @@ diffnet</code></pre></div>
 <h3>Example 2: Loading a static diffusion network via <code>edgelist_to_diffnet</code></h3>
 <p>Following the previous example, instead of “manually” generating the adjacency matrix and calling the <code>as_diffnet</code> function, we will use the <code>edgelist_to_diffnet</code> function. The most important issue when calling this routine is to have matching ids between the edgelist and the attributes dataset. So before calling the <code>edgelist_to_diffnet</code> function we need to fix the <code>id</code> column in the <code>fakesurvey</code> dataset:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Before</span>
-fakesurvey$id</code></pre></div>
+fakesurvey<span class="op">$</span>id</code></pre></div>
 <pre><code># [1]  1  2  3  4  5  1  2  5 10</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Changing the id</span>
-fakesurvey$id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurvey, group*<span class="dv">100</span> +<span class="st"> </span>id)
+fakesurvey<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurvey, group<span class="op">*</span><span class="dv">100</span> <span class="op">+</span><span class="st"> </span>id)
 
 <span class="co"># After</span>
-fakesurvey$id</code></pre></div>
+fakesurvey<span class="op">$</span>id</code></pre></div>
 <pre><code># [1] 101 102 103 104 105 201 202 205 210</code></pre>
 <p>Now that it is fixed, we can call the <code>edgelist_to_diffnet</code> function</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet2 &lt;-<span class="st"> </span><span class="kw">edgelist_to_diffnet</span>(
-  <span class="dt">edgelist =</span> fakeEdgelist[,<span class="dv">1</span>:<span class="dv">2</span>], <span class="co"># Passed to edgelist_to_adjmat</span>
-  <span class="dt">w        =</span> fakeEdgelist$value, <span class="co"># Passed to edgelist_to_adjmat</span>
+  <span class="dt">edgelist =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Passed to edgelist_to_adjmat</span>
+  <span class="dt">w        =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># Passed to edgelist_to_adjmat</span>
   <span class="dt">dat      =</span> fakesurvey,        <span class="co"># Data frame with -idvar- and -toavar-</span>
   <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,              <span class="co"># Name of the -idvar- in -dat-</span>
   <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,             <span class="co"># Name of the -toavar- in -dat-</span>
@@ -317,7 +317,7 @@ diffnet_wo_unsurveyed</code></pre></div>
 <span class="kw">nodes</span>(diffnet_wo_unsurveyed)</code></pre></div>
 <pre><code># [1] &quot;101&quot; &quot;102&quot; &quot;103&quot; &quot;104&quot; &quot;105&quot; &quot;201&quot; &quot;202&quot; &quot;205&quot; &quot;210&quot;</code></pre>
 <p>Furthermore, we can compare the two diffusion networks by sustracting one from another:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">difference &lt;-<span class="st"> </span>diffnet_w_unsurveyed -<span class="st"> </span>diffnet_wo_unsurveyed
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">difference &lt;-<span class="st"> </span>diffnet_w_unsurveyed <span class="op">-</span><span class="st"> </span>diffnet_wo_unsurveyed
 difference</code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
 #  Name               : Diffusion Network
@@ -360,15 +360,15 @@ difference</code></pre></div>
 # 6               First wave: Only nominates outsiders 1990</code></pre>
 <p>Same as before, we have to make sure the ids are right</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Fixing ids</span>
-fakesurveyDyn$id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurveyDyn, group*<span class="dv">100</span> +<span class="st"> </span>id)
+fakesurveyDyn<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurveyDyn, group<span class="op">*</span><span class="dv">100</span> <span class="op">+</span><span class="st"> </span>id)
 
 <span class="co"># An individual who is alone</span>
 fakeDynEdgelist[<span class="dv">11</span>,<span class="st">&quot;value&quot;</span>] &lt;-<span class="st"> </span><span class="dv">1</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet &lt;-<span class="st"> </span><span class="kw">edgelist_to_diffnet</span>(
-  <span class="dt">edgelist =</span> fakeDynEdgelist[,<span class="dv">1</span>:<span class="dv">2</span>], <span class="co"># As usual, a two column dataset</span>
-  <span class="dt">w        =</span> fakeDynEdgelist$value, <span class="co"># Here we are using weights</span>
-  <span class="dt">t0       =</span> fakeDynEdgelist$time,  <span class="co"># An integer vector with starting point of spell</span>
-  <span class="dt">t1       =</span> fakeDynEdgelist$time,  <span class="co"># An integer vector with the endpoint of spell</span>
+  <span class="dt">edgelist =</span> fakeDynEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># As usual, a two column dataset</span>
+  <span class="dt">w        =</span> fakeDynEdgelist<span class="op">$</span>value, <span class="co"># Here we are using weights</span>
+  <span class="dt">t0       =</span> fakeDynEdgelist<span class="op">$</span>time,  <span class="co"># An integer vector with starting point of spell</span>
+  <span class="dt">t1       =</span> fakeDynEdgelist<span class="op">$</span>time,  <span class="co"># An integer vector with the endpoint of spell</span>
   <span class="dt">dat      =</span> fakesurveyDyn,         <span class="co"># Attributes dataset</span>
   <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,                  
   <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,

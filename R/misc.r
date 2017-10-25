@@ -105,6 +105,11 @@ pretty_within <- function(x, min.n=5, xrange=range(x, na.rm = TRUE), ...) {
 #' @param labels Character vector. When provided, specifies using different
 #' labels for the tick marks than those provided by \code{tick.marjks}.
 #' @param add.box Logical scalar. When \code{TRUE} adds a box around the key.
+#' @param na.col Character scalar. If specified, adds an aditional box indicating the NA color.
+#' @param na.height Numeric scalar. Relative height of the NA box. Only use if
+#' \code{na.col} is not \code{NULL}.
+#' @param na.lab Character scalar. Label of the \code{NA} block. Only use if
+#' \code{na.col} is not \code{NULL}.
 #' @param ... Further arguments to be passed to \code{\link[graphics:rect]{rect}}
 #' @export
 #' @return Invisible \code{NULL}.
@@ -121,13 +126,20 @@ pretty_within <- function(x, min.n=5, xrange=range(x, na.rm = TRUE), ...) {
 #' @keywords misc
 drawColorKey <- function(
   x,
-  tick.marks = pretty_within(x),
-  labels     = tick.marks,
-  main=NULL,
-  key.pos=c(.925,.975,.05,.95),
-  pos = 2, nlevels=length(tick.marks),
-  color.palette=grDevices::colorRampPalette(c("lightblue", "yellow", "red"))(nlevels),
-  tick.width=c(.01,.0075), add.box=TRUE, ...) {
+  tick.marks    = pretty_within(x),
+  labels        = tick.marks,
+  main          = NULL,
+  key.pos       = c(.925,.975,.05,.95),
+  pos           = 2,
+  nlevels       = length(tick.marks),
+  color.palette = grDevices::colorRampPalette(c("steelblue", "gray", "tomato"))(nlevels),
+  tick.width    = c(.01,.0075),
+  add.box       = TRUE,
+  na.col        = NULL,
+  na.height     = .1,
+  na.lab        = "n/a",
+  ...) {
+
   # Checking the pos argument
   test <- which((key.pos > 1) | (key.pos < 0))
   if (length(test))
@@ -141,6 +153,15 @@ drawColorKey <- function(
     y*key.pos[3], -y*(1-key.pos[4])
   ))
 
+  # Giving an space for the NA, putting the starting point
+  # a 10% higher.
+  if (length(na.col)) {
+    na.coords <- coords[3]
+    coords[3] <- coords[3] + (coords[4] - coords[3])*na.height
+  } else {
+    na.coords <- 0
+  }
+
   # Adjusting for text
   if (length(main)) {
     nlines <- length(strsplit(main, "\n")[[1]])
@@ -148,7 +169,6 @@ drawColorKey <- function(
     # nchars <- min(max(nchar(tick.marks)),5)
     # coords[1] <- coords[1] + par("cxy")
   }
-
 
   s <- seq(coords[3], coords[4], length.out = nlevels + 1)
   rcoords <- data.frame(
@@ -170,12 +190,53 @@ drawColorKey <- function(
 
   i <- switch (pos,NA,1,NA,2)
   sgn <- ifelse(pos==2, 1, -1)
-  if (!add.box) graphics::segments(coords[i], coords[3], coords[i], coords[4])
+
+  # Drawing the box
+  if (!add.box)
+    graphics::segments(
+      x0 = coords[i],
+      y0 = ifelse(length(na.col), na.coords, coords[3]),
+      x1 = coords[i], y1 = coords[4])
+
   graphics::segments(coords[i] - tw[1]*sgn, atick.marks, coords[i] + tw[2]*sgn, atick.marks)
   graphics::text(coords[i] - sgn*tw[1], atick.marks, labels = labels, pos=pos)
 
   # Adding box
-  if (add.box) graphics::rect(coords[1], coords[3], coords[2], coords[4])
+  if (add.box)
+    graphics::rect(
+      xleft = coords[1],
+      ybottom = ifelse(length(na.col), na.coords, coords[3]),
+      xright = coords[2], ytop = coords[4])
+
+  # Adding the NA if any
+  if (length(na.col)) {
+
+    # Drawing the rectangle
+    graphics::rect(
+      xleft   = coords[1],
+      ybottom = na.coords,
+      xright  = coords[2],
+      ytop    = coords[3],
+      col     = na.col,
+      border  = "transparent"
+    )
+
+    # Adding text
+    # graphics::segments(
+    #   x0 = coords[i] - tw[1]*sgn,
+    #   y0 = (coords[3] + na.coords)/2,
+    #   x1 = coords[i] + tw[2]*sgn,
+    #   y1 = (coords[3] + na.coords)/2
+    # )
+
+    # graphics::text(coords[i] - sgn*tw[1], atick.marks, labels = labels, pos=pos)
+    graphics::text(
+      x = coords[i] - sgn*tw[1],
+      y = (coords[3] + na.coords)/2,
+      labels = na.lab,
+      pos = pos
+    )
+  }
 
   if (length(main))
     graphics::text(
@@ -226,6 +287,8 @@ drawColorKey <- function(
 #' of \code{minmax.relative.size} and \code{par.usr}. The adjusted value \eqn{v'}
 #' is then multiplied by \code{adjust}.
 #'
+#' \code{igraph_vertex_rescale} and \code{vertex_rescale_igraph} are aliases.
+#'
 #' @return An integer vector of the same length as \code{vertex.size} with
 #' rescaled values.
 #' @export
@@ -270,7 +333,7 @@ drawColorKey <- function(
 rescale_vertex_igraph <- function(
   vertex.size,
   par.usr=par("usr"),
-  minmax.relative.size=c(.005,.025),
+  minmax.relative.size= getOption("diffnet.minmax.relative.size", c(0.01, 0.04)),
   adjust=200
 ) {
   if (!length(vertex.size)) return(
@@ -285,6 +348,85 @@ rescale_vertex_igraph <- function(
   return(vertex.size*adjust/2)
 }
 
+#' @rdname rescale_vertex_igraph
+#' @export
+igraph_vertex_rescale <- rescale_vertex_igraph
+
+#' @rdname rescale_vertex_igraph
+#' @export
+vertex_rescale_igraph <- rescale_vertex_igraph
+
+# Function to create vertex size accordingly to the
+compute_vertex_size <- function(x, vertex.size, slice=1L) {
+
+  # If it is null
+  if (!length(vertex.size))
+    return(rep(1L, nnodes(x)))
+
+  # If it is of length 1
+  if (length(vertex.size) == 1 && is.character(vertex.size)) {
+
+    # Matching degree
+    cmodes <- c("indegree", "degree", "outdegree")
+    cmode <- cmodes[pmatch(vertex.size, cmodes)]
+
+    if (is.na(cmode))
+      stop("Invalid -vertex.size-.\"",vertex.size,"\" is not supported, it should be either \"",
+           paste(cmodes, collapse = "\", \""), ".")
+
+    # Repeating the values
+    return(dgr(x, cmode = cmode)[,slice])
+  }
+
+  # Applyging the function accordignly
+  if (is.numeric(vertex.size)) {
+
+    if (length(vertex.size) == 1) return(rep(vertex.size, nnodes(x)))
+    else return(vertex.size)
+
+  } else
+    stop("Invalid -vertex.size-. It cannot be of class -", class(vertex.size),
+         "-. Valid values are either a numeric vector/scalar, or any of ",
+         "\"degree\", \"indegree\", or \"outdegree\".")
+
+}
+
+add_dimnames.mat <- function(x) {
+  # Getting the parameters
+  env <- parent.frame()
+  x   <- as.character(match.call()$x)
+
+  # Updating row and colnames if necesary
+  if (!length(rownames(env[[x]])))
+    rownames(env[[x]]) <- 1L:nrow(env[[x]])
+  if (!length(colnames(env[[x]])))
+    colnames(env[[x]]) <- 1L:ncol(env[[x]])
+  if (length(dim(env[[x]])) == 3 && length(dimnames(env[[x]])) != 3)
+    dimnames(env[[x]])[[3]] <- 1L:nslices(env[[x]])
+
+}
+
+add_dimnames.list <- function(x) {
+
+  # Getting the call and the environments
+  env <- parent.frame()
+  x   <- as.character(match.call()$x)
+
+  # Updating row and colnames if necesary
+  for (i in 1:length(env[[x]])) {
+    if (!length(rownames(env[[x]][[i]])))
+      rownames(env[[x]][[i]]) <- 1L:nrow(env[[x]][[i]])
+    if (!length(colnames(env[[x]][[i]])))
+      colnames(env[[x]][[i]]) <- 1L:ncol(env[[x]][[i]])
+  }
+
+  if (!length(names(env[[x]])))
+    names(env[[x]]) <- 1L:nslices(env[[x]])
+
+}
+
+
+
 
 #' Coerce a matrix-like objects to \code{dgCMatrix} (sparse matrix)
 #'
@@ -292,6 +434,8 @@ rescale_vertex_igraph <- function(
 #' from the \pkg{Matrix} package, \code{\link[Matrix:dgCMatrix-class]{dgCMatrix}}.
 #'
 #' @param x An object to be coerced into a sparse matrix.
+#' @param make.dimnames Logical scalar. When \code{TRUE}, it makes sure that the
+#' returned object has dimnames.
 #' @param ... Further arguments passed to the method.
 #'
 #' @details
@@ -326,10 +470,11 @@ rescale_vertex_igraph <- function(
 #' as_dgCMatrix(myarray)
 #'
 #' # From a diffnet object
-#' as_dgCMatrix(medInnovationsDiffNet)
+#' ans <- as_dgCMatrix(medInnovationsDiffNet)
+#' str(ans)
 #'
 #'
-as_dgCMatrix <- function(x, ...) {
+as_dgCMatrix <- function(x, make.dimnames = TRUE, ...) {
   UseMethod("as_dgCMatrix")
 }
 
@@ -343,13 +488,20 @@ as_spmat <- as_dgCMatrix
 
 #' @export
 #' @rdname as_dgCMatrix
-as_dgCMatrix.default <- function(x, ...) {
-  methods::as(x, "dgCMatrix")
+as_dgCMatrix.default <- function(x, make.dimnames = TRUE, ...) {
+
+  ans <- methods::as(x, "dgCMatrix")
+
+  # Updating row and colnames if necesary
+  if (make.dimnames)
+    add_dimnames.mat(ans)
+
+  ans
 }
 
 #' @export
 #' @rdname as_dgCMatrix
-as_dgCMatrix.diffnet <- function(x, ...) {
+as_dgCMatrix.diffnet <- function(x, make.dimnames = TRUE, ...) {
   ans <- x$graph
   ans <- lapply(ans, `dimnames<-`, list(x$meta$ids,x$meta$ids))
   ans
@@ -357,18 +509,46 @@ as_dgCMatrix.diffnet <- function(x, ...) {
 
 #' @export
 #' @rdname as_dgCMatrix
-as_dgCMatrix.array <- function(x, ...) {
-  apply(x, 3, methods::as, Class="dgCMatrix")
+as_dgCMatrix.array <- function(x, make.dimnames = TRUE, ...) {
+
+  ans <- apply(x, 3, methods::as, Class="dgCMatrix")
+
+  # Updating row and colnames if necesary
+  if (make.dimnames)
+    add_dimnames.list(ans)
+
+  ans
+
 }
 
 #' @export
 #' @rdname as_dgCMatrix
-as_dgCMatrix.igraph <- function(x, ...) {
-  igraph::as_adj(x, ...)
+as_dgCMatrix.igraph <- function(x, make.dimnames = TRUE, ...) {
+  as_dgCMatrix(igraph::as_adj(x, ...), make.dimnames = make.dimnames)
 }
 
 #' @export
 #' @rdname as_dgCMatrix
-as_dgCMatrix.network <- function(x, ...) {
-  as_dgCMatrix(network::as.matrix.network(x))
+as_dgCMatrix.network <- function(x, make.dimnames = TRUE, ...) {
+  as_dgCMatrix(network::as.matrix.network(x), make.dimnames = make.dimnames)
+}
+
+#' @export
+#' @rdname as_dgCMatrix
+as_dgCMatrix.list <- function(x, make.dimnames=TRUE, ...) {
+
+  lapply(x, as_dgCMatrix, make.dimnames = make.dimnames)
+
+}
+
+
+subtitle <- function(
+  x,
+  coords = graphics::par("usr")[c(1, 4)] - c(0, graphics::strheight(x)*1.5/2),
+  pos    = 4,
+  cex    = 1
+  ) {
+
+  text(x = coords[1], y = coords[2], labels = x, pos = pos, cex=cex, offset=0)
+
 }

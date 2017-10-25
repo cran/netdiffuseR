@@ -48,7 +48,7 @@ summary(diffnet)
 
 ## ----graphs--------------------------------------------------------------
 plot_diffnet(diffnet, slices=c(1,4,8,12,16,18))
-plot_threshold(diffnet, undirected = FALSE, vertex.cex = 1/5)
+plot_threshold(diffnet, undirected = FALSE, vertex.size = 1/5)
 plot_adopters(diffnet)
 plot_hazard(diffnet)
 
@@ -111,13 +111,25 @@ hist(test4, main="Distribution of Statistic on rewired\nnetwork (City 4)", ask =
 par(oldpar)
 
 ## ----Computing-exposure--------------------------------------------------
-# Calculating exposure
-expo <- exposure(diffnet)
+# Calculating lagged exposure
+expo <- exposure(diffnet, lags = 1L)
 head(expo)
 
 # Netdiffuser automatically identifies whether the input is dynamic or not.
-diffnet[["netexp"]] <- expo
+diffnet[["lagged_expo"]] <- expo
+diffnet[["adopted"]]  <- toa_mat(diffnet)$cumadopt
 
-## ------------------------------------------------------------------------
-mydata <- diffnet.attrs(diffnet, as.df = TRUE)
+## ----Creating the diffnet model------------------------------------------
+# Getting the data
+mydata <- as.data.frame(diffnet)
+
+## ----Running the model---------------------------------------------------
+# Running a model
+summary(
+  glm(adopted ~ lagged_expo + factor(per) + factor(city) + belief + 
+        proage + I(proage^2),
+      dat    = mydata, 
+      subset = (per <= toa) & per < 18,
+      family = binomial(link="logit"))
+)
 

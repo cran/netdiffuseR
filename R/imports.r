@@ -1,16 +1,16 @@
 #' @importFrom Rcpp evalCpp
 NULL
 
-#' @importFrom sna gplot as.sociomatrix.sna
+#' @importFrom sna as.sociomatrix.sna
 #' @importFrom igraph graph_from_adjacency_matrix set_vertex_attr
 #'  any_multiple graph_attr_names as_adj is.loop set_graph_attr V permute make_graph
-#'  layout_nicely graph_attr
+#'  layout_nicely graph_attr list.edge.attributes graph_from_adj_list
 #' @importFrom network as.edgelist is.multiplex is.directed has.loops as.network
 #'  get.network.attribute list.vertex.attributes
 #' @importFrom networkDynamic networkDynamic network.extract network.collapse
 NULL
 
-#' @useDynLib netdiffuseR
+#' @useDynLib netdiffuseR, .registration = TRUE
 NULL
 
 # Importing from the Matrix pkg ------------------------------------------------
@@ -29,6 +29,7 @@ NULL
 #' @importFrom grDevices grey rgb colorRampPalette blues9
 #' @importFrom graphics grid par plot points symbols text layout legend lines
 #'  matplot plot.new plot.window hist mtext polygon image title .filled.contour
+#'  box rect
 #' @importFrom stats complete.cases runif reshape setNames ftable sd pnorm var
 #' as.formula optim nls coef
 #' @importFrom utils getFromNamespace head str

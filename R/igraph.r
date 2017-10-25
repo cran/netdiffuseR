@@ -47,11 +47,6 @@ diffnet_to_igraph <- function(graph, slices=1:nslices(graph)) {
       diag      = graph$meta$self
       )
 
-    # Computing positions
-    tempgraph <- igraph::permute(
-      tempgraph, match(igraph::V(tempgraph)$name, graph$meta$ids)
-      )
-
     # Vertex Static Attributes
     for (k in static.attrs)
       tempgraph <-
@@ -140,8 +135,15 @@ igraph_to_diffnet <- function(
   if (!length(t0)) t0 <- min(toa, na.rm = TRUE)
   if (!length(t1)) t1 <- max(toa, na.rm = TRUE)
 
-  mat <- if (!islist) igraph::as_adj(graph, attr="weight")
-  else lapply(graph.list, igraph::as_adj, attr="weight")
+  mat <- if (!islist) {
+    wattr <- igraph::list.edge.attributes(graph)
+    wattr <- if ("weights" %in% wattr) "weights" else NULL
+    igraph::as_adj(graph, attr = wattr, sparse = TRUE)
+  } else lapply(graph.list, function(g) {
+    wattr <- igraph::list.edge.attributes(g)
+    wattr <- if ("weights" %in% wattr) "weights" else NULL
+    igraph::as_adj(g, attr=wattr, sparse=TRUE)
+    })
 
   # Adjusting sizes
   if (!islist)
@@ -150,13 +152,14 @@ igraph_to_diffnet <- function(
   # Getting the attributes
   vertex.static.attrs <- NULL
   vertex.dyn.attrs    <- NULL
-  if (!islist)
+  if (!islist) {
     vertex.static.attrs <- as.data.frame(
       igraph::vertex.attributes(graph))
-  else
+  } else {
     vertex.dyn.attrs <- lapply(graph.list, function(x) {
       as.data.frame(igraph::vertex.attributes(x))
     })
+  }
 
   # Removing toa
   if (length(vertex.static.attrs)) {
@@ -181,6 +184,67 @@ igraph_to_diffnet <- function(
              name                = igraph::graph_attr(graph.list[[1]], "name"),
              behavior            = igraph::graph_attr(graph.list[[1]], "behavior"),
              self                = any(igraph::is.loop(graph.list[[1]])),
+             undirected          = !igraph::is.directed(graph.list[[1]]),
              ...))
+
+}
+
+
+# This is for creating themes for igraph plotting ------------------------------
+
+# The default themes
+igraph_plotting_defaults <- list(
+  vertex.frame.color  = "black",
+  edge.color          = grDevices::adjustcolor("gray", .8),
+  edge.arrow.size     = .25,
+  vertex.label        = NA,
+  vertex.label.color  = "black",
+  vertex.label.family = "sans",
+  vertex.label.dist   = 1,
+  edge.curved         = TRUE,
+  rescale             = TRUE,
+  add                 = TRUE
+)
+
+plotting_defaults <- c(
+  color  = "steelblue",
+  family = "sans",
+  lwd    = 2,
+  border = igraph_plotting_defaults$edge.color,
+  igraph_plotting_defaults
+)
+
+# This function changes defaults accordignly
+# The function takes -obj_name- which is the name of the object that holds
+# the igraph parameters, and modifies it in the parent frame directly (so
+# no copying over the functions, edition of the environment itself).
+set_igraph_plotting_defaults <- function(obj_name) {
+
+  env <- parent.frame()
+
+  # All igraph plots are added
+  if (length(env[[obj_name]]$add) && !env[[obj_name]]$add)
+    stop("The argument -add- cannot be changed to FALSE.")
+
+  # Checking all the reminder arguments
+  for (default in names(igraph_plotting_defaults)) {
+    if (!length(env[[obj_name]][[default]]))
+      env[[obj_name]][[default]] <- igraph_plotting_defaults[[default]]
+  }
+}
+
+# This function sets the default values for plotting parameters looking at
+# parameters available in igraph_plotting_defaults
+set_plotting_defaults <- function(params) {
+  env <- parent.frame()
+  for (param in params) {
+    if (!exists(param, envir = env))
+      stop("No such parameter!")
+
+    if (!length(env[[param]]))
+      env[[param]] <- plotting_defaults[[param]]
+
+
+  }
 
 }

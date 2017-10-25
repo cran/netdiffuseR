@@ -41,7 +41,7 @@ coords <- set.seed(s);plot(diffnet_mar, main="Marginal seed")
 par(oldpar)
 
 ## ------------------------------------------------------------------------
-plot_diffnet(diffnet_ran, slices = c(1,4,8,12,16,20), coords=coords)
+plot_diffnet(diffnet_ran, slices = c(1,4,8,12,16,20), layout=coords)
 
 ## ----Cumulative adopt count----------------------------------------------
 plot_adopters(diffnet_ran, bg = cols[1], include.legend = FALSE, what="cumadopt")
@@ -71,4 +71,21 @@ plot_infectsuscep(diffnet_mar, bins=15, K=3,
 
 ## ----Threshold-----------------------------------------------------------
 plot_threshold(diffnet_ran)
+
+## ----Multiple-simulations------------------------------------------------
+# Simulating a diffusion process with all the defaults but setting 
+# -seed.nodes- to be random
+set.seed(1)
+ans0 <- rdiffnet_multiple(R=50, statistic=function(x) sum(!is.na(x$toa)),
+                          n = 100, t = 4, seed.nodes = "random", stop.no.diff=FALSE)
+
+# Simulating a diffusion process with all the defaults but setting 
+# -seed.nodes- to be central
+set.seed(1)
+ans1 <- rdiffnet_multiple(R=50, statistic=function(x) sum(!is.na(x$toa)),
+                          n = 100, t = 4, seed.nodes = "central", stop.no.diff=FALSE)
+
+boxplot(cbind(Random = ans0, Central = ans1),
+        main="Distribution of number of adopters in\ndifferent seedscenarios",
+        sub = "(50 simulations each)", ylab="Number of adopters")
 

@@ -245,21 +245,17 @@ NumericMatrix edges_coords(
 
   yexpand = yexpand * (dev[0]/dev[1]);
 
-  // The the filled elements of the graph
-  arma::umat indexes = sparse_indexes(graph);
+  for(arma::sp_mat::const_iterator it = graph.begin(); it != graph.end(); it++) {
 
-  // for(int i=0;i<n;i++) {
-  for(unsigned I=0;I<indexes.n_rows;I++) {
-
-    int i = indexes.at(I,0);
-    int j = indexes.at(I,1);
+    int i = it.row();
+    int j = it.col();
 
     // Checking conditions
     if (undirected && (i < j)) continue;
     if (no_contemporary && (toa(i)==toa(j)) ) continue;
 
     // Computing angle
-    double a = angle(x(i), y(i)/yexpand, x(j), y(j)/yexpand);
+    double a = atan2((y(j) - y(i))/yexpand, x(j) - x(i));
     alpha.push_back(a);
 
     // Adding the xs and the ys
@@ -357,7 +353,7 @@ arma::mat edges_arrow(
   yexpand = yexpand * (dev[0]/dev[1]);
 
   // Computing angle and adjusting for sign
-  double alpha = angle(x0, y0/yexpand, x1, y1/yexpand);
+  double alpha = atan2((y1 - y0)/yexpand, x1 - x0);
 
   // Filling coords ------------------------------------------------------------
   coords.at(0,0) = x1;
