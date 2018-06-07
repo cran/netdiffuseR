@@ -102,6 +102,7 @@ grid_distribution <- function(x, y, nlevels = 100L) {
 #' coordiantes for vertices with the same time of adoption (see details).
 #' @param dev Numeric vector of size 2. Height and width of the device (see details).
 #' @param ran Numeric vector of size 2. Range of the x and y axis (see details).
+#' @param curved Logical vector.
 #' @return A numeric matrix of size \eqn{m\times 5}{m * 5} with the following
 #' columns:
 #' \item{x0, y0}{Edge origin}
@@ -180,12 +181,12 @@ grid_distribution <- function(x, y, nlevels = 100L) {
 #'
 #' with(ecoords, arrows(x0,y0,x1,y1, length=.1))
 #' @export
-edges_coords <- function(graph, toa, x, y, vertex_cex, undirected = TRUE, no_contemporary = TRUE, dev = as.numeric( c()), ran = as.numeric( c())) {
-    .Call(`_netdiffuseR_edges_coords`, graph, toa, x, y, vertex_cex, undirected, no_contemporary, dev, ran)
+edges_coords <- function(graph, toa, x, y, vertex_cex, undirected = TRUE, no_contemporary = TRUE, dev = as.numeric( c()), ran = as.numeric( c()), curved = as.logical( c())) {
+    .Call(`_netdiffuseR_edges_coords`, graph, toa, x, y, vertex_cex, undirected, no_contemporary, dev, ran, curved)
 }
 
-edges_arrow <- function(x0, y0, x1, y1, height, width, beta = 1.5707963267949, dev = as.numeric( c()), ran = as.numeric( c())) {
-    .Call(`_netdiffuseR_edges_arrow`, x0, y0, x1, y1, height, width, beta, dev, ran)
+edges_arrow <- function(x0, y0, x1, y1, height, width, beta = 1.5707963267949, dev = as.numeric( c()), ran = as.numeric( c()), curved = FALSE) {
+    .Call(`_netdiffuseR_edges_arrow`, x0, y0, x1, y1, height, width, beta, dev, ran, curved)
 }
 
 vertices_coords <- function(x, y, size, nsides, rot, dev = as.numeric( c()), ran = as.numeric( c())) {
@@ -300,8 +301,8 @@ moran_cpp <- function(x, w) {
     .Call(`_netdiffuseR_moran_cpp`, x, w)
 }
 
-struct_equiv_cpp <- function(graph, v = 1.0, unscaled = FALSE, inv = FALSE, invrep = 0.0) {
-    .Call(`_netdiffuseR_struct_equiv_cpp`, graph, v, unscaled, inv, invrep)
+struct_equiv_cpp <- function(graph, v = 1.0) {
+    .Call(`_netdiffuseR_struct_equiv_cpp`, graph, v)
 }
 
 matrix_compareCpp <- function(A, B, fun) {

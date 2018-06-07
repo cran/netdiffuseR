@@ -95,7 +95,7 @@ plot_diffnet2.default <- function(
   graph,
   toa,
   pers          = min(toa, na.rm = TRUE):max(toa, na.rm = TRUE),
-  color.ramp    = grDevices::colorRamp(c("steelblue","gray", "tomato")),
+  color.ramp    = grDevices::colorRamp(viridis::magma(20)),
   layout        = NULL,
   key.width     = 0.1,
   key.args      = list(),
@@ -167,6 +167,9 @@ plot_diffnet2.default <- function(
   igraph.args$layout <- if (!length(layout)) igraph::layout_nicely(g)
   else if (inherits(layout, "function")) layout(g)
   else layout
+
+  # Adjusting layout
+  igraph.args$layout <- igraph::norm_coords(igraph.args$layout)
 
   # Keywidth
   key.width <- max(0, key.width)

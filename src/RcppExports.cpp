@@ -198,8 +198,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // edges_coords
-NumericMatrix edges_coords(const arma::sp_mat& graph, const arma::colvec& toa, const arma::colvec& x, const arma::colvec& y, const arma::colvec& vertex_cex, bool undirected, bool no_contemporary, NumericVector dev, NumericVector ran);
-RcppExport SEXP _netdiffuseR_edges_coords(SEXP graphSEXP, SEXP toaSEXP, SEXP xSEXP, SEXP ySEXP, SEXP vertex_cexSEXP, SEXP undirectedSEXP, SEXP no_contemporarySEXP, SEXP devSEXP, SEXP ranSEXP) {
+NumericMatrix edges_coords(const arma::sp_mat& graph, const arma::colvec& toa, const arma::colvec& x, const arma::colvec& y, const arma::colvec& vertex_cex, bool undirected, bool no_contemporary, NumericVector dev, NumericVector ran, LogicalVector curved);
+RcppExport SEXP _netdiffuseR_edges_coords(SEXP graphSEXP, SEXP toaSEXP, SEXP xSEXP, SEXP ySEXP, SEXP vertex_cexSEXP, SEXP undirectedSEXP, SEXP no_contemporarySEXP, SEXP devSEXP, SEXP ranSEXP, SEXP curvedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -212,13 +212,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type no_contemporary(no_contemporarySEXP);
     Rcpp::traits::input_parameter< NumericVector >::type dev(devSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type ran(ranSEXP);
-    rcpp_result_gen = Rcpp::wrap(edges_coords(graph, toa, x, y, vertex_cex, undirected, no_contemporary, dev, ran));
+    Rcpp::traits::input_parameter< LogicalVector >::type curved(curvedSEXP);
+    rcpp_result_gen = Rcpp::wrap(edges_coords(graph, toa, x, y, vertex_cex, undirected, no_contemporary, dev, ran, curved));
     return rcpp_result_gen;
 END_RCPP
 }
 // edges_arrow
-arma::mat edges_arrow(const double& x0, const double& y0, const double& x1, const double& y1, const double& height, const double& width, const double beta, NumericVector dev, NumericVector ran);
-RcppExport SEXP _netdiffuseR_edges_arrow(SEXP x0SEXP, SEXP y0SEXP, SEXP x1SEXP, SEXP y1SEXP, SEXP heightSEXP, SEXP widthSEXP, SEXP betaSEXP, SEXP devSEXP, SEXP ranSEXP) {
+List edges_arrow(const double& x0, const double& y0, const double& x1, const double& y1, const double& height, const double& width, const double beta, NumericVector dev, NumericVector ran, bool curved);
+RcppExport SEXP _netdiffuseR_edges_arrow(SEXP x0SEXP, SEXP y0SEXP, SEXP x1SEXP, SEXP y1SEXP, SEXP heightSEXP, SEXP widthSEXP, SEXP betaSEXP, SEXP devSEXP, SEXP ranSEXP, SEXP curvedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -231,7 +232,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type beta(betaSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type dev(devSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type ran(ranSEXP);
-    rcpp_result_gen = Rcpp::wrap(edges_arrow(x0, y0, x1, y1, height, width, beta, dev, ran));
+    Rcpp::traits::input_parameter< bool >::type curved(curvedSEXP);
+    rcpp_result_gen = Rcpp::wrap(edges_arrow(x0, y0, x1, y1, height, width, beta, dev, ran, curved));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -452,17 +454,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // struct_equiv_cpp
-List struct_equiv_cpp(const arma::sp_mat& graph, double v, bool unscaled, bool inv, double invrep);
-RcppExport SEXP _netdiffuseR_struct_equiv_cpp(SEXP graphSEXP, SEXP vSEXP, SEXP unscaledSEXP, SEXP invSEXP, SEXP invrepSEXP) {
+List struct_equiv_cpp(const arma::sp_mat& graph, double v);
+RcppExport SEXP _netdiffuseR_struct_equiv_cpp(SEXP graphSEXP, SEXP vSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type graph(graphSEXP);
     Rcpp::traits::input_parameter< double >::type v(vSEXP);
-    Rcpp::traits::input_parameter< bool >::type unscaled(unscaledSEXP);
-    Rcpp::traits::input_parameter< bool >::type inv(invSEXP);
-    Rcpp::traits::input_parameter< double >::type invrep(invrepSEXP);
-    rcpp_result_gen = Rcpp::wrap(struct_equiv_cpp(graph, v, unscaled, inv, invrep));
+    rcpp_result_gen = Rcpp::wrap(struct_equiv_cpp(graph, v));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -535,8 +534,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_netdiffuseR_sp_as_undirected", (DL_FUNC) &_netdiffuseR_sp_as_undirected, 1},
     {"_netdiffuseR_bootnet_fillself", (DL_FUNC) &_netdiffuseR_bootnet_fillself, 3},
     {"_netdiffuseR_grid_distribution", (DL_FUNC) &_netdiffuseR_grid_distribution, 3},
-    {"_netdiffuseR_edges_coords", (DL_FUNC) &_netdiffuseR_edges_coords, 9},
-    {"_netdiffuseR_edges_arrow", (DL_FUNC) &_netdiffuseR_edges_arrow, 9},
+    {"_netdiffuseR_edges_coords", (DL_FUNC) &_netdiffuseR_edges_coords, 10},
+    {"_netdiffuseR_edges_arrow", (DL_FUNC) &_netdiffuseR_edges_arrow, 10},
     {"_netdiffuseR_vertices_coords", (DL_FUNC) &_netdiffuseR_vertices_coords, 7},
     {"_netdiffuseR_rgraph_er_cpp", (DL_FUNC) &_netdiffuseR_rgraph_er_cpp, 5},
     {"_netdiffuseR_ring_lattice", (DL_FUNC) &_netdiffuseR_ring_lattice, 3},
@@ -552,7 +551,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_netdiffuseR_vertex_mahalanobis_dist_cpp", (DL_FUNC) &_netdiffuseR_vertex_mahalanobis_dist_cpp, 3},
     {"_netdiffuseR_vertex_covariate_compare", (DL_FUNC) &_netdiffuseR_vertex_covariate_compare, 3},
     {"_netdiffuseR_moran_cpp", (DL_FUNC) &_netdiffuseR_moran_cpp, 2},
-    {"_netdiffuseR_struct_equiv_cpp", (DL_FUNC) &_netdiffuseR_struct_equiv_cpp, 5},
+    {"_netdiffuseR_struct_equiv_cpp", (DL_FUNC) &_netdiffuseR_struct_equiv_cpp, 2},
     {"_netdiffuseR_matrix_compareCpp", (DL_FUNC) &_netdiffuseR_matrix_compareCpp, 3},
     {"_netdiffuseR_struct_test_mean", (DL_FUNC) &_netdiffuseR_struct_test_mean, 3},
     {"_netdiffuseR_struct_test_var", (DL_FUNC) &_netdiffuseR_struct_test_var, 3},

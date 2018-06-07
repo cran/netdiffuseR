@@ -133,3 +133,9 @@ summary(
       family = binomial(link="logit"))
 )
 
+## ----Diffreg-------------------------------------------------------------
+summary(
+  diffreg(diffnet ~ exposure + factor(per) + factor(city) + belief + 
+            proage + I(proage^2))
+  )
+
