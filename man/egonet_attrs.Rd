@@ -5,7 +5,8 @@
 \title{Retrieve alter's attributes (network effects)}
 \usage{
 egonet_attrs(graph, attrs, V = NULL, direction = "outgoing",
-  fun = function(x) x, as.df = FALSE, self = getOption("diffnet.self"),
+  fun = function(x) x, as.df = FALSE,
+  self = getOption("diffnet.self"),
   valued = getOption("diffnet.valued"), ...)
 }
 \arguments{

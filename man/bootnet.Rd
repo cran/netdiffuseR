@@ -17,10 +17,11 @@ bootnet(graph, statistic, R, resample.args = list(self = FALSE), ...)
 \method{print}{diffnet_bootnet}(x, ...)
 
 \method{hist}{diffnet_bootnet}(x,
-  main = "Empirical Distribution of Statistic", xlab = expression(Values ~
-  of ~ t), breaks = 20, annotated = TRUE, b0 = expression(atop(plain("")
-  \%up\% plain("")), t[0]), b = expression(atop(plain("") \%up\% plain("")),
-  t[]), ask = TRUE, ...)
+  main = "Empirical Distribution of Statistic",
+  xlab = expression(Values ~ of ~ t), breaks = 20, annotated = TRUE,
+  b0 = expression(atop(plain("") \%up\% plain("")), t[0]),
+  b = expression(atop(plain("") \%up\% plain("")), t[]), ask = TRUE,
+  ...)
 }
 \arguments{
 \item{graph}{Any class of accepted graph format (see \code{\link{netdiffuseR-graphs}}).}
@@ -110,7 +111,7 @@ ans
 \references{
 Snijders, T. A. B., & Borgatti, S. P. (1999). Non-Parametric
 Standard Errors and Tests for Network Statistics. Connections, 22(2), 1–10.
-Retrieved from \url{https://insna.org/PDF/Connections/v22/1999_I-2_61-70.pdf}
+Retrieved from \url{https://www.stats.ox.ac.uk/~snijders/Snijders_Borgatti.pdf}
 }
 \seealso{
 Other Functions for inference: \code{\link{moran}},

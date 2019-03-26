@@ -27,8 +27,8 @@ as_diffnet(graph, ...)
 
 \method{as_diffnet}{networkDynamic}(graph, toavar, ...)
 
-new_diffnet(graph, toa, t0 = min(toa, na.rm = TRUE), t1 = max(toa, na.rm =
-  TRUE), vertex.dyn.attrs = NULL, vertex.static.attrs = NULL,
+new_diffnet(graph, toa, t0 = min(toa, na.rm = TRUE), t1 = max(toa,
+  na.rm = TRUE), vertex.dyn.attrs = NULL, vertex.static.attrs = NULL,
   id.and.per.vars = NULL, graph.attrs = NULL,
   undirected = getOption("diffnet.undirected"),
   self = getOption("diffnet.self"),
@@ -38,10 +38,11 @@ new_diffnet(graph, toa, t0 = min(toa, na.rm = TRUE), t1 = max(toa, na.rm =
 \method{as.data.frame}{diffnet}(x, row.names = NULL, optional = FALSE,
   attr.class = c("dyn", "static"), ...)
 
-diffnet.attrs(graph, element = c("vertex", "graph"), attr.class = c("dyn",
-  "static"), as.df = FALSE)
+diffnet.attrs(graph, element = c("vertex", "graph"),
+  attr.class = c("dyn", "static"), as.df = FALSE)
 
-diffnet.attrs(graph, element = "vertex", attr.class = "static") <- value
+diffnet.attrs(graph, element = "vertex",
+  attr.class = "static") <- value
 
 diffnet.toa(graph)
 

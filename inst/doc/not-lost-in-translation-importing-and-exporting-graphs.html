@@ -19,47 +19,280 @@
 
 
 <style type="text/css">code{white-space: pre;}</style>
-<style type="text/css">
-div.sourceCode { overflow-x: auto; }
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
-  margin: 0; padding: 0; vertical-align: baseline; border: none; }
-table.sourceCode { width: 100%; line-height: 100%; }
-td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
-td.sourceCode { padding-left: 5px; }
-code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code > span.dt { color: #902000; } /* DataType */
-code > span.dv { color: #40a070; } /* DecVal */
-code > span.bn { color: #40a070; } /* BaseN */
-code > span.fl { color: #40a070; } /* Float */
-code > span.ch { color: #4070a0; } /* Char */
-code > span.st { color: #4070a0; } /* String */
-code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code > span.ot { color: #007020; } /* Other */
-code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code > span.fu { color: #06287e; } /* Function */
-code > span.er { color: #ff0000; font-weight: bold; } /* Error */
-code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-code > span.cn { color: #880000; } /* Constant */
-code > span.sc { color: #4070a0; } /* SpecialChar */
-code > span.vs { color: #4070a0; } /* VerbatimString */
-code > span.ss { color: #bb6688; } /* SpecialString */
-code > span.im { } /* Import */
-code > span.va { color: #19177c; } /* Variable */
-code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code > span.op { color: #666666; } /* Operator */
-code > span.bu { } /* BuiltIn */
-code > span.ex { } /* Extension */
-code > span.pp { color: #bc7a00; } /* Preprocessor */
-code > span.at { color: #7d9029; } /* Attribute */
-code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
 </style>
 
 
 
-<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
 
 </head>
 
@@ -69,8 +302,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 <h1 class="title toc-ignore">Not-Lost in translation: Getting diffusion data into netdiffuseR</h1>
-<h4 class="author"><em>George G. Vega Yon</em></h4>
-<h4 class="date"><em>January 13, 2016</em></h4>
+<h4 class="author">George G. Vega Yon</h4>
+<h4 class="date">January 13, 2016</h4>
 
 
 
@@ -96,7 +329,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li>We call raw network data to datasets that have a somewhat raw form, for example, edgelists, adjacency matrices, survey nomination data, etc. and need to be read into R.</li>
 <li>Usually this datasets are acompained with vertex attribute data.</li>
 <li><p>The issue is how to read it into R and handle it altogether.</p></li>
-<li><p>Before start, we recommend the user to take a look at the <em>Data input</em> functions included in the <code>utils</code> package (see <code>?read.table</code>), to the functions included in the <code>foreign</code> package (useful to read from Stata, SPSS, etc.), and to the <code>read_excel</code> function in the <code>readxl</code> package<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> for reading excel files into R.</p></li>
+<li><p>Before start, we recommend the user to take a look at the <em>Data input</em> functions included in the <code>utils</code> package (see <code>?read.table</code>), to the functions included in the <code>foreign</code> package (useful to read from Stata, SPSS, etc.), and to the <code>read_excel</code> function in the <code>readxl</code> package<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> for reading excel files into R.</p></li>
 </ul>
 <div id="edge-lists" class="section level2">
 <h2>Edge lists</h2>
@@ -109,11 +342,11 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="example-1-loading-a-static-diffusion-network-via-as_diffnet" class="section level3">
 <h3>Example 1: Loading a static diffusion network via <code>as_diffnet</code></h3>
 <p>For this example we will use the <code>fakesurvey</code> and <code>fakeEdgelist</code> datasets. The later was been generated using the <code>fakesurvey</code> dataset, which holds survey information retrieved from 10 different individuals in two different groups. Ties in the <code>fakeEdgelist</code> dataset are valued, and its value coincides with the number of nominatios that each individual in the survey did to each other.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Loading the datasets</span>
-<span class="kw">data</span>(<span class="st">&quot;fakesurvey&quot;</span>)
-<span class="kw">data</span>(<span class="st">&quot;fakeEdgelist&quot;</span>)</code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="co"># Loading the datasets</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">data</span>(<span class="st">&quot;fakesurvey&quot;</span>)</a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">data</span>(<span class="st">&quot;fakeEdgelist&quot;</span>)</a></code></pre></div>
 <p>Taking a look at <code>fakesurvey</code>’s <code>group</code> and <code>id</code> column and <code>fakeEdgelist</code>’s <code>ego</code> and <code>alter</code> columns the user can tell that the laters have been generated by adding up <code>group*100</code> with <code>id</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(fakesurvey[,<span class="kw">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;group&quot;</span>)])</code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">head</span>(fakesurvey[,<span class="kw">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;group&quot;</span>)])</a></code></pre></div>
 <pre><code>#   id group
 # 1  1     1
 # 2  2     1
@@ -121,7 +354,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 # 4  4     1
 # 5  5     1
 # 6  1     2</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(fakeEdgelist)</code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">head</span>(fakeEdgelist)</a></code></pre></div>
 <pre><code>#   ego alter value
 # 1 102   101     1
 # 2 103   102     1
@@ -131,34 +364,34 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 # 6 104   105     1</code></pre>
 <p>We will use this information later on to verify the way the data is sorted in the resulting <code>diffnet</code> objects.</p>
 <p>To use the <code>as_diffnet</code> function we need at least two objects: a <strong>dynamic graph</strong> represented as either an array or a list of adjacency matrices, each of size <span class="math inline">\(n\times n\)</span>, which in our case will be <span class="math inline">\(10\times 10\)</span>, and an integer vector of size <span class="math inline">\(n=10\)</span> which holds each vertex’s <strong>time of adoption</strong>. Lets start by generating the dynamic graph using th <code>edgelist_to_adjmat</code> function:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the edgelist to an adjacency matrix</span>
-adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>(
-  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span>
-  <span class="dt">w          =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># An optional vector with weights</span>
-  <span class="dt">undirected =</span> <span class="ot">FALSE</span>,              <span class="co"># In this case, the edgelist is directed</span>
-  <span class="dt">t          =</span> <span class="dv">5</span>)                  <span class="co"># We use this option to make 5 replicas of it</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1"><span class="co"># Coercing the edgelist to an adjacency matrix</span></a>
+<a class="sourceLine" id="cb6-2" title="2">adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>(</a>
+<a class="sourceLine" id="cb6-3" title="3">  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span></a>
+<a class="sourceLine" id="cb6-4" title="4">  <span class="dt">w          =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># An optional vector with weights</span></a>
+<a class="sourceLine" id="cb6-5" title="5">  <span class="dt">undirected =</span> <span class="ot">FALSE</span>,              <span class="co"># In this case, the edgelist is directed</span></a>
+<a class="sourceLine" id="cb6-6" title="6">  <span class="dt">t          =</span> <span class="dv">5</span>)                  <span class="co"># We use this option to make 5 replicas of it</span></a></code></pre></div>
 <pre><code># Warning in edgelist_to_adjmat.matrix(as.matrix(edgelist), w, t0, t1, t, : Some edges a had NA/NULL value on either -times- or -w-:
 #   11
-# These won't be included in the adjacency matrix. The complete list will be stored as an attribute of the resulting adjacency matrix, namely, -incomplete-.</code></pre>
+# These won&#39;t be included in the adjacency matrix. The complete list will be stored as an attribute of the resulting adjacency matrix, namely, -incomplete-.</code></pre>
 <p>As the function warns, there is an edge that had incomplete information, and further was not used to create the adjacency matrix, the edge 11. If we take a look at that edge, we will see that indeed it had incomplete information on the weight attribute:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fakeEdgelist[<span class="dv">11</span>,,drop=<span class="ot">FALSE</span>]</code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">fakeEdgelist[<span class="dv">11</span>,,drop=<span class="ot">FALSE</span>]</a></code></pre></div>
 <pre><code>#    ego alter value
 # 11 202  &lt;NA&gt;    NA</code></pre>
 <p>In order to address this, if we want to keep the vertex 202, an isolated vertex in the data, we need to fill that value up so that when creating the diffnet object we won’t have any problem having more attributes or times of adoption that vertices in the graph.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Filling the empty data, and checking the outcome</span>
-fakeEdgelist[<span class="dv">11</span>,<span class="st">&quot;value&quot;</span>] &lt;-<span class="st"> </span><span class="dv">1</span>
-fakeEdgelist[<span class="dv">11</span>,,drop=<span class="ot">FALSE</span>]</code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="co"># Filling the empty data, and checking the outcome</span></a>
+<a class="sourceLine" id="cb10-2" title="2">fakeEdgelist[<span class="dv">11</span>,<span class="st">&quot;value&quot;</span>] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb10-3" title="3">fakeEdgelist[<span class="dv">11</span>,,drop=<span class="ot">FALSE</span>]</a></code></pre></div>
 <pre><code>#    ego alter value
 # 11 202  &lt;NA&gt;     1</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the edgelist to an adjacency matrix (again)</span>
-adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>(
-  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span>
-  <span class="dt">w          =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># An optional vector with weights</span>
-  <span class="dt">undirected =</span> <span class="ot">FALSE</span>,              <span class="co"># In this case, the edgelist is directed</span>
-  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>,            <span class="co"># </span><span class="al">NOTICE</span><span class="co"> THIS NEW ARGUMENT!</span>
-  <span class="dt">t          =</span> <span class="dv">5</span>)                  <span class="co"># We use this option to make 5 replicas of it</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1"><span class="co"># Coercing the edgelist to an adjacency matrix (again)</span></a>
+<a class="sourceLine" id="cb12-2" title="2">adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>(</a>
+<a class="sourceLine" id="cb12-3" title="3">  <span class="dt">edgelist   =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Should be a two column matrix/data.frame</span></a>
+<a class="sourceLine" id="cb12-4" title="4">  <span class="dt">w          =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># An optional vector with weights</span></a>
+<a class="sourceLine" id="cb12-5" title="5">  <span class="dt">undirected =</span> <span class="ot">FALSE</span>,              <span class="co"># In this case, the edgelist is directed</span></a>
+<a class="sourceLine" id="cb12-6" title="6">  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>,            <span class="co"># </span><span class="al">NOTICE</span><span class="co"> THIS NEW ARGUMENT!</span></a>
+<a class="sourceLine" id="cb12-7" title="7">  <span class="dt">t          =</span> <span class="dv">5</span>)                  <span class="co"># We use this option to make 5 replicas of it</span></a></code></pre></div>
 <p>As expected, there is no warning. Furthermore, we have told the function that in case of having isolated vertices to keep them, as is in the case of the edge #11 which has the vertex 202. Since we asked the function to create 5 copies of the adjacency matrix, we have a list of length 5 with adjacency matrices. Lets take a look at the first element of this list:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">adjmat[[<span class="dv">1</span>]]</code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">adjmat[[<span class="dv">1</span>]]</a></code></pre></div>
 <pre><code># 9 x 9 sparse Matrix of class &quot;dgCMatrix&quot;
 #     101 102 103 104 105 201 202 205 210
 # 101   .   .   .   .   .   .   .   .   .
@@ -170,16 +403,16 @@ adjmat  &lt;-<span class="st"> </span><span class="kw">edgelist_to_adjmat</span>
 # 202   .   .   .   .   .   .   .   .   .
 # 205   .   .   .   .   .   1   .   .   1
 # 210   .   .   .   .   .   1   .   1   .</code></pre>
-<p>As you can see, the <code>edgelist_to_adjmat</code> function kept the vertices labels and included them as dimnames in the matrix.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> Now that our adjacency matrix has the number of elements that we expected, which actually coincides with the number of rows in the <code>fakesurvey</code> dataset, we can create a <code>diffnet</code> object:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the adjacency matrix and edgelist into a diffnet object</span>
-diffnet &lt;-<span class="st"> </span><span class="kw">as_diffnet</span>(
-  <span class="dt">graph               =</span> adjmat,         <span class="co"># Passing a dynamic graph</span>
-  <span class="dt">toa                 =</span> fakesurvey<span class="op">$</span>toa, <span class="co"># This is required</span>
-  <span class="dt">vertex.static.attrs =</span> fakesurvey      <span class="co"># Is is optional</span>
-  )
-
-<span class="co"># Taking a look at the diffnet object</span>
-diffnet</code></pre></div>
+<p>As you can see, the <code>edgelist_to_adjmat</code> function kept the vertices labels and included them as dimnames in the matrix.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> Now that our adjacency matrix has the number of elements that we expected, which actually coincides with the number of rows in the <code>fakesurvey</code> dataset, we can create a <code>diffnet</code> object:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1"><span class="co"># Coercing the adjacency matrix and edgelist into a diffnet object</span></a>
+<a class="sourceLine" id="cb15-2" title="2">diffnet &lt;-<span class="st"> </span><span class="kw">as_diffnet</span>(</a>
+<a class="sourceLine" id="cb15-3" title="3">  <span class="dt">graph               =</span> adjmat,         <span class="co"># Passing a dynamic graph</span></a>
+<a class="sourceLine" id="cb15-4" title="4">  <span class="dt">toa                 =</span> fakesurvey<span class="op">$</span>toa, <span class="co"># This is required</span></a>
+<a class="sourceLine" id="cb15-5" title="5">  <span class="dt">vertex.static.attrs =</span> fakesurvey      <span class="co"># Is is optional</span></a>
+<a class="sourceLine" id="cb15-6" title="6">  )</a>
+<a class="sourceLine" id="cb15-7" title="7"></a>
+<a class="sourceLine" id="cb15-8" title="8"><span class="co"># Taking a look at the diffnet object</span></a>
+<a class="sourceLine" id="cb15-9" title="9">diffnet</a></code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
 #  Name               : Diffusion Network
 #  Behavior           : Unspecified
@@ -192,30 +425,30 @@ diffnet</code></pre></div>
 </div>
 <div id="example-2-loading-a-static-diffusion-network-via-edgelist_to_diffnet" class="section level3">
 <h3>Example 2: Loading a static diffusion network via <code>edgelist_to_diffnet</code></h3>
-<p>Following the previous example, instead of “manually” generating the adjacency matrix and calling the <code>as_diffnet</code> function, we will use the <code>edgelist_to_diffnet</code> function. The most important issue when calling this routine is to have matching ids between the edgelist and the attributes dataset. So before calling the <code>edgelist_to_diffnet</code> function we need to fix the <code>id</code> column in the <code>fakesurvey</code> dataset:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Before</span>
-fakesurvey<span class="op">$</span>id</code></pre></div>
+<p>Following the previous example, instead of “manually” generating the adjacency matrix and calling the <code>as_diffnet</code> function, we will use the <code>edgelist_to_diffnet</code> function. The most important issue when calling this routine is to have matching ids between the edgelist and the attributes dataset. So before calling the <code>edgelist_to_diffnet</code> function we need to fix the <code>id</code> column in the <code>fakesurvey</code> dataset:<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1"><span class="co"># Before</span></a>
+<a class="sourceLine" id="cb17-2" title="2">fakesurvey<span class="op">$</span>id</a></code></pre></div>
 <pre><code># [1]  1  2  3  4  5  1  2  5 10</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Changing the id</span>
-fakesurvey<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurvey, group<span class="op">*</span><span class="dv">100</span> <span class="op">+</span><span class="st"> </span>id)
-
-<span class="co"># After</span>
-fakesurvey<span class="op">$</span>id</code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="co"># Changing the id</span></a>
+<a class="sourceLine" id="cb19-2" title="2">fakesurvey<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurvey, group<span class="op">*</span><span class="dv">100</span> <span class="op">+</span><span class="st"> </span>id)</a>
+<a class="sourceLine" id="cb19-3" title="3"></a>
+<a class="sourceLine" id="cb19-4" title="4"><span class="co"># After</span></a>
+<a class="sourceLine" id="cb19-5" title="5">fakesurvey<span class="op">$</span>id</a></code></pre></div>
 <pre><code># [1] 101 102 103 104 105 201 202 205 210</code></pre>
 <p>Now that it is fixed, we can call the <code>edgelist_to_diffnet</code> function</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet2 &lt;-<span class="st"> </span><span class="kw">edgelist_to_diffnet</span>(
-  <span class="dt">edgelist =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Passed to edgelist_to_adjmat</span>
-  <span class="dt">w        =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># Passed to edgelist_to_adjmat</span>
-  <span class="dt">dat      =</span> fakesurvey,        <span class="co"># Data frame with -idvar- and -toavar-</span>
-  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,              <span class="co"># Name of the -idvar- in -dat-</span>
-  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,             <span class="co"># Name of the -toavar- in -dat-</span>
-  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>          <span class="co"># Passed to edgelist_to_adjmat   </span>
-)</code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1">diffnet2 &lt;-<span class="st"> </span><span class="kw">edgelist_to_diffnet</span>(</a>
+<a class="sourceLine" id="cb21-2" title="2">  <span class="dt">edgelist =</span> fakeEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># Passed to edgelist_to_adjmat</span></a>
+<a class="sourceLine" id="cb21-3" title="3">  <span class="dt">w        =</span> fakeEdgelist<span class="op">$</span>value, <span class="co"># Passed to edgelist_to_adjmat</span></a>
+<a class="sourceLine" id="cb21-4" title="4">  <span class="dt">dat      =</span> fakesurvey,        <span class="co"># Data frame with -idvar- and -toavar-</span></a>
+<a class="sourceLine" id="cb21-5" title="5">  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,              <span class="co"># Name of the -idvar- in -dat-</span></a>
+<a class="sourceLine" id="cb21-6" title="6">  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,             <span class="co"># Name of the -toavar- in -dat-</span></a>
+<a class="sourceLine" id="cb21-7" title="7">  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>          <span class="co"># Passed to edgelist_to_adjmat   </span></a>
+<a class="sourceLine" id="cb21-8" title="8">)</a></code></pre></div>
 <pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
 # Coercing -ego- into character.</code></pre>
 <pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
 # Coercing -alter- into character.</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet2</code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1">diffnet2</a></code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
 #  Name               : Diffusion Network
 #  Behavior           : Unspecified
@@ -238,9 +471,9 @@ fakesurvey<span class="op">$</span>id</code></pre></div>
 <div id="example-3-cross-section-diffusion-data" class="section level3">
 <h3>Example 3: Cross section diffusion data</h3>
 <p>We start by taking a look at the data</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Loading the data</span>
-<span class="kw">data</span>(<span class="st">&quot;fakesurvey&quot;</span>)
-fakesurvey</code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="co"># Loading the data</span></a>
+<a class="sourceLine" id="cb26-2" title="2"><span class="kw">data</span>(<span class="st">&quot;fakesurvey&quot;</span>)</a>
+<a class="sourceLine" id="cb26-3" title="3">fakesurvey</a></code></pre></div>
 <pre><code>#   id toa group net1 net2 net3 age gender
 # 1  1   1     1   NA   NA   NA  30      M
 # 2  2   5     1    3    1   NA  35      F
@@ -255,32 +488,32 @@ fakesurvey</code></pre></div>
 # 1                         No nominations
 # 2                          Nothing weird
 # 3                 Only nominates in net2
-# 4 Nominates someone who wasn't interview
+# 4 Nominates someone who wasn&#39;t interview
 # 5                  Nominates 4 two times
 # 6               Only nominates outsiders
 # 7                               Isolated
 # 8                          Nothing weird
 # 9                            Non-adopter</code></pre>
 <p>A couple of important remarks for this dataset. First, each individual in this dataset belongs to a different group, while this is not always the case, <code>survey_to_diffnet</code> allows accounting for this through the <code>groupvar</code> argument. Also, besides of having an isolated vertex, two individuals in the survey nominate people that neither weren’t survey nor show in their groups:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fakesurvey[<span class="kw">c</span>(<span class="dv">4</span>,<span class="dv">6</span>),]</code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" title="1">fakesurvey[<span class="kw">c</span>(<span class="dv">4</span>,<span class="dv">6</span>),]</a></code></pre></div>
 <pre><code>#   id toa group net1 net2 net3 age gender
 # 4  4   3     1    6    5   NA  30      M
 # 6  1   4     2    3    4    8  29      F
 #                                     note
-# 4 Nominates someone who wasn't interview
+# 4 Nominates someone who wasn&#39;t interview
 # 6               Only nominates outsiders</code></pre>
 <p>So in group one 4 nominates id 6, who does not show in the data, and in group two 6 nominates 3, 4, and 8, also individuals who don’t show up in the survey.</p>
 <p>While for some researchers nominations of unsurveyed individuals may not be of importance, for some others might be. For such cases, the function has the option of either keeping unsurveyed individuals (so you would get a bigger adjacency matrix), or ignore them and keep only those who were surveyed. For example, if we wanted to keep unsurveyed individuals in the network we would need to set <code>no.unsurveyed = FALSE</code>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the survey data into a diffnet object</span>
-diffnet_w_unsurveyed &lt;-<span class="st"> </span><span class="kw">survey_to_diffnet</span>(
-  <span class="dt">dat      =</span> fakesurvey,                <span class="co"># The dataset</span>
-  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,                      <span class="co"># Name of the idvar (must be integer)</span>
-  <span class="dt">netvars  =</span> <span class="kw">c</span>(<span class="st">&quot;net1&quot;</span>, <span class="st">&quot;net2&quot;</span>, <span class="st">&quot;net3&quot;</span>), <span class="co"># Vector of names of nomination vars</span>
-  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,                     <span class="co"># Name of the time of adoption var</span>
-  <span class="dt">groupvar =</span> <span class="st">&quot;group&quot;</span>,                   <span class="co"># Name of the group var (OPTIONAL)</span>
-  <span class="dt">no.unsurveyed =</span> <span class="ot">FALSE</span>                 <span class="co"># KEEP OR NOT UNSURVEYED</span>
-)
-diffnet_w_unsurveyed</code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" title="1"><span class="co"># Coercing the survey data into a diffnet object</span></a>
+<a class="sourceLine" id="cb30-2" title="2">diffnet_w_unsurveyed &lt;-<span class="st"> </span><span class="kw">survey_to_diffnet</span>(</a>
+<a class="sourceLine" id="cb30-3" title="3">  <span class="dt">dat      =</span> fakesurvey,                <span class="co"># The dataset</span></a>
+<a class="sourceLine" id="cb30-4" title="4">  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,                      <span class="co"># Name of the idvar (must be integer)</span></a>
+<a class="sourceLine" id="cb30-5" title="5">  <span class="dt">netvars  =</span> <span class="kw">c</span>(<span class="st">&quot;net1&quot;</span>, <span class="st">&quot;net2&quot;</span>, <span class="st">&quot;net3&quot;</span>), <span class="co"># Vector of names of nomination vars</span></a>
+<a class="sourceLine" id="cb30-6" title="6">  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,                     <span class="co"># Name of the time of adoption var</span></a>
+<a class="sourceLine" id="cb30-7" title="7">  <span class="dt">groupvar =</span> <span class="st">&quot;group&quot;</span>,                   <span class="co"># Name of the group var (OPTIONAL)</span></a>
+<a class="sourceLine" id="cb30-8" title="8">  <span class="dt">no.unsurveyed =</span> <span class="ot">FALSE</span>                 <span class="co"># KEEP OR NOT UNSURVEYED</span></a>
+<a class="sourceLine" id="cb30-9" title="9">)</a>
+<a class="sourceLine" id="cb30-10" title="10">diffnet_w_unsurveyed</a></code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
 #  Name               : Diffusion Network
 #  Behavior           : Unspecified
@@ -290,20 +523,20 @@ diffnet_w_unsurveyed</code></pre></div>
 #  Final prevalence   : 0.62
 #  Static attributes  : group, net1, net2, net3, age, gender, note (7)
 #  Dynamic attributes : -</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Retrieving nodes ids</span>
-<span class="kw">nodes</span>(diffnet_w_unsurveyed)</code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb32-1" title="1"><span class="co"># Retrieving nodes ids</span></a>
+<a class="sourceLine" id="cb32-2" title="2"><span class="kw">nodes</span>(diffnet_w_unsurveyed)</a></code></pre></div>
 <pre><code>#  [1] &quot;101&quot; &quot;102&quot; &quot;103&quot; &quot;104&quot; &quot;105&quot; &quot;106&quot; &quot;201&quot; &quot;202&quot; &quot;203&quot; &quot;204&quot; &quot;205&quot;
 # [12] &quot;208&quot; &quot;210&quot;</code></pre>
 <p>A network spanning 5 time periods with 13 vertices (9 surveyed individuals + 4 unsurveyed individuals). This produces a different result when compared to the case in which me use the default behavior of the function, <code>no.unsurveyed = TRUE</code>:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Coercing the survey data into a diffnet object</span>
-diffnet_wo_unsurveyed &lt;-<span class="st"> </span><span class="kw">survey_to_diffnet</span>(
-  <span class="dt">dat      =</span> fakesurvey,                <span class="co"># The dataset</span>
-  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,                      <span class="co"># Name of the idvar (must be integer)</span>
-  <span class="dt">netvars  =</span> <span class="kw">c</span>(<span class="st">&quot;net1&quot;</span>, <span class="st">&quot;net2&quot;</span>, <span class="st">&quot;net3&quot;</span>), <span class="co"># Vector of names of nomination vars</span>
-  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,                     <span class="co"># Name of the time of adoption var</span>
-  <span class="dt">groupvar =</span> <span class="st">&quot;group&quot;</span>                    <span class="co"># Name of the group var (OPTIONAL)</span>
-)
-diffnet_wo_unsurveyed</code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" title="1"><span class="co"># Coercing the survey data into a diffnet object</span></a>
+<a class="sourceLine" id="cb34-2" title="2">diffnet_wo_unsurveyed &lt;-<span class="st"> </span><span class="kw">survey_to_diffnet</span>(</a>
+<a class="sourceLine" id="cb34-3" title="3">  <span class="dt">dat      =</span> fakesurvey,                <span class="co"># The dataset</span></a>
+<a class="sourceLine" id="cb34-4" title="4">  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,                      <span class="co"># Name of the idvar (must be integer)</span></a>
+<a class="sourceLine" id="cb34-5" title="5">  <span class="dt">netvars  =</span> <span class="kw">c</span>(<span class="st">&quot;net1&quot;</span>, <span class="st">&quot;net2&quot;</span>, <span class="st">&quot;net3&quot;</span>), <span class="co"># Vector of names of nomination vars</span></a>
+<a class="sourceLine" id="cb34-6" title="6">  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,                     <span class="co"># Name of the time of adoption var</span></a>
+<a class="sourceLine" id="cb34-7" title="7">  <span class="dt">groupvar =</span> <span class="st">&quot;group&quot;</span>                    <span class="co"># Name of the group var (OPTIONAL)</span></a>
+<a class="sourceLine" id="cb34-8" title="8">)</a>
+<a class="sourceLine" id="cb34-9" title="9">diffnet_wo_unsurveyed</a></code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
 #  Name               : Diffusion Network
 #  Behavior           : Unspecified
@@ -313,12 +546,12 @@ diffnet_wo_unsurveyed</code></pre></div>
 #  Final prevalence   : 0.89
 #  Static attributes  : group, net1, net2, net3, age, gender, note (7)
 #  Dynamic attributes : -</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Retrieving nodes ids</span>
-<span class="kw">nodes</span>(diffnet_wo_unsurveyed)</code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb36-1" title="1"><span class="co"># Retrieving nodes ids</span></a>
+<a class="sourceLine" id="cb36-2" title="2"><span class="kw">nodes</span>(diffnet_wo_unsurveyed)</a></code></pre></div>
 <pre><code># [1] &quot;101&quot; &quot;102&quot; &quot;103&quot; &quot;104&quot; &quot;105&quot; &quot;201&quot; &quot;202&quot; &quot;205&quot; &quot;210&quot;</code></pre>
 <p>Furthermore, we can compare the two diffusion networks by sustracting one from another:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">difference &lt;-<span class="st"> </span>diffnet_w_unsurveyed <span class="op">-</span><span class="st"> </span>diffnet_wo_unsurveyed
-difference</code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb38-1" title="1">difference &lt;-<span class="st"> </span>diffnet_w_unsurveyed <span class="op">-</span><span class="st"> </span>diffnet_wo_unsurveyed</a>
+<a class="sourceLine" id="cb38-2" title="2">difference</a></code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
 #  Name               : Diffusion Network
 #  Behavior           : Unspecified
@@ -332,9 +565,9 @@ difference</code></pre></div>
 <div id="example-4-longitudinal-diffusion-data" class="section level3">
 <h3>Example 4: Longitudinal diffusion data</h3>
 <p>In this example we will use dynamic network data, this is, an edgelist with spells and dynamic attributes</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Taking a look at the data</span>
-<span class="kw">data</span>(<span class="st">&quot;fakeDynEdgelist&quot;</span>)
-<span class="kw">head</span>(fakeDynEdgelist)</code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb40-1" title="1"><span class="co"># Taking a look at the data</span></a>
+<a class="sourceLine" id="cb40-2" title="2"><span class="kw">data</span>(<span class="st">&quot;fakeDynEdgelist&quot;</span>)</a>
+<a class="sourceLine" id="cb40-3" title="3"><span class="kw">head</span>(fakeDynEdgelist)</a></code></pre></div>
 <pre><code>#   ego alter value time
 # 1 102   101     1 1990
 # 2 103   102     1 1990
@@ -342,8 +575,8 @@ difference</code></pre></div>
 # 4 105   103     1 1990
 # 5 105   104     2 1990
 # 6 104   105     1 1990</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(<span class="st">&quot;fakesurveyDyn&quot;</span>)
-<span class="kw">head</span>(fakesurveyDyn)</code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb42-1" title="1"><span class="kw">data</span>(<span class="st">&quot;fakesurveyDyn&quot;</span>)</a>
+<a class="sourceLine" id="cb42-2" title="2"><span class="kw">head</span>(fakesurveyDyn)</a></code></pre></div>
 <pre><code>#   id  toa group net1 net2 net3 age gender
 # 1  1 1991     1   NA   NA   NA  30      M
 # 2  2 1990     1    3    1   NA  35      F
@@ -355,33 +588,33 @@ difference</code></pre></div>
 # 1                         First wave: No nominations 1990
 # 2                          First wave: Nothing weird 1990
 # 3                 First wave: Only nominates in net2 1990
-# 4 First wave: Nominates someone who wasn't interview 1990
+# 4 First wave: Nominates someone who wasn&#39;t interview 1990
 # 5                  First wave: Nominates 4 two times 1990
 # 6               First wave: Only nominates outsiders 1990</code></pre>
 <p>Same as before, we have to make sure the ids are right</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Fixing ids</span>
-fakesurveyDyn<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurveyDyn, group<span class="op">*</span><span class="dv">100</span> <span class="op">+</span><span class="st"> </span>id)
-
-<span class="co"># An individual who is alone</span>
-fakeDynEdgelist[<span class="dv">11</span>,<span class="st">&quot;value&quot;</span>] &lt;-<span class="st"> </span><span class="dv">1</span></code></pre></div>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet &lt;-<span class="st"> </span><span class="kw">edgelist_to_diffnet</span>(
-  <span class="dt">edgelist =</span> fakeDynEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># As usual, a two column dataset</span>
-  <span class="dt">w        =</span> fakeDynEdgelist<span class="op">$</span>value, <span class="co"># Here we are using weights</span>
-  <span class="dt">t0       =</span> fakeDynEdgelist<span class="op">$</span>time,  <span class="co"># An integer vector with starting point of spell</span>
-  <span class="dt">t1       =</span> fakeDynEdgelist<span class="op">$</span>time,  <span class="co"># An integer vector with the endpoint of spell</span>
-  <span class="dt">dat      =</span> fakesurveyDyn,         <span class="co"># Attributes dataset</span>
-  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,                  
-  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,
-  <span class="dt">timevar  =</span> <span class="st">&quot;time&quot;</span>,
-  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>              <span class="co"># Keeping isolates (if there's any)</span>
-)</code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb44-1" title="1"><span class="co"># Fixing ids</span></a>
+<a class="sourceLine" id="cb44-2" title="2">fakesurveyDyn<span class="op">$</span>id &lt;-<span class="st"> </span><span class="kw">with</span>(fakesurveyDyn, group<span class="op">*</span><span class="dv">100</span> <span class="op">+</span><span class="st"> </span>id)</a>
+<a class="sourceLine" id="cb44-3" title="3"></a>
+<a class="sourceLine" id="cb44-4" title="4"><span class="co"># An individual who is alone</span></a>
+<a class="sourceLine" id="cb44-5" title="5">fakeDynEdgelist[<span class="dv">11</span>,<span class="st">&quot;value&quot;</span>] &lt;-<span class="st"> </span><span class="dv">1</span></a></code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb45-1" title="1">diffnet &lt;-<span class="st"> </span><span class="kw">edgelist_to_diffnet</span>(</a>
+<a class="sourceLine" id="cb45-2" title="2">  <span class="dt">edgelist =</span> fakeDynEdgelist[,<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>], <span class="co"># As usual, a two column dataset</span></a>
+<a class="sourceLine" id="cb45-3" title="3">  <span class="dt">w        =</span> fakeDynEdgelist<span class="op">$</span>value, <span class="co"># Here we are using weights</span></a>
+<a class="sourceLine" id="cb45-4" title="4">  <span class="dt">t0       =</span> fakeDynEdgelist<span class="op">$</span>time,  <span class="co"># An integer vector with starting point of spell</span></a>
+<a class="sourceLine" id="cb45-5" title="5">  <span class="dt">t1       =</span> fakeDynEdgelist<span class="op">$</span>time,  <span class="co"># An integer vector with the endpoint of spell</span></a>
+<a class="sourceLine" id="cb45-6" title="6">  <span class="dt">dat      =</span> fakesurveyDyn,         <span class="co"># Attributes dataset</span></a>
+<a class="sourceLine" id="cb45-7" title="7">  <span class="dt">idvar    =</span> <span class="st">&quot;id&quot;</span>,                  </a>
+<a class="sourceLine" id="cb45-8" title="8">  <span class="dt">toavar   =</span> <span class="st">&quot;toa&quot;</span>,</a>
+<a class="sourceLine" id="cb45-9" title="9">  <span class="dt">timevar  =</span> <span class="st">&quot;time&quot;</span>,</a>
+<a class="sourceLine" id="cb45-10" title="10">  <span class="dt">keep.isolates =</span> <span class="ot">TRUE</span>              <span class="co"># Keeping isolates (if there&#39;s any)</span></a>
+<a class="sourceLine" id="cb45-11" title="11">)</a></code></pre></div>
 <pre><code># Warning in check_var_class_and_coerce(x, dat, c(&quot;numeric&quot;, &quot;integer&quot;),
 # &quot;integer&quot;, : Coercing -time- into integer.</code></pre>
 <pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
 # Coercing -ego- into character.</code></pre>
 <pre><code># Warning in check_var_class_and_coerce(x, edgelist, c(&quot;factor&quot;, &quot;integer&quot;, :
 # Coercing -alter- into character.</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">diffnet</code></pre></div>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb49-1" title="1">diffnet</a></code></pre></div>
 <pre><code># Dynamic network of class -diffnet-
 #  Name               : Diffusion Network
 #  Behavior           : Unspecified
@@ -397,9 +630,9 @@ fakeDynEdgelist[<span class="dv">11</span>,<span class="st">&quot;value&quot;</s
 <div class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p>While there are other candidates as the <code>openxlsx</code> package, the <code>readxl</code> package has the nice feature of correctly processing the encoding of the excel files. This is specially important if you are dealing with non ASCII or UTF-8 datasets.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>Another thing to tell, the matrices stored in <code>adjmat</code> are of class <code>dgCMatrix</code> from the <code>Matrix</code> package, these are Column Compressed Stored sparse matrices and allows saving memory in matrices with many zeros. <strong>netdiffuseR</strong> routines are based in this class of matrices. Furthermore, to have an idea of how much memory sparse matrices save, while a square matrix of size <span class="math inline">\(5e4\times 5e4\)</span> would need close to 18GB of memory using a regular R <code>matrix</code>, a <code>dgCMatrix</code> of the same size takes around 6MB.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>The <code>with</code> function allows simplifying data management in R by allowing to reference columns in a data.frame without having to call the data.frame itself (see <code>?with</code>).<a href="#fnref3">↩</a></p></li>
+<li id="fn1"><p>While there are other candidates as the <code>openxlsx</code> package, the <code>readxl</code> package has the nice feature of correctly processing the encoding of the excel files. This is specially important if you are dealing with non ASCII or UTF-8 datasets.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn2"><p>Another thing to tell, the matrices stored in <code>adjmat</code> are of class <code>dgCMatrix</code> from the <code>Matrix</code> package, these are Column Compressed Stored sparse matrices and allows saving memory in matrices with many zeros. <strong>netdiffuseR</strong> routines are based in this class of matrices. Furthermore, to have an idea of how much memory sparse matrices save, while a square matrix of size <span class="math inline">\(5e4\times 5e4\)</span> would need close to 18GB of memory using a regular R <code>matrix</code>, a <code>dgCMatrix</code> of the same size takes around 6MB.<a href="#fnref2" class="footnote-back">↩</a></p></li>
+<li id="fn3"><p>The <code>with</code> function allows simplifying data management in R by allowing to reference columns in a data.frame without having to call the data.frame itself (see <code>?with</code>).<a href="#fnref3" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
 

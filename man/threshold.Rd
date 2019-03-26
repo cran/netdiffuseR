@@ -4,8 +4,8 @@
 \alias{threshold}
 \title{Retrive threshold levels from the exposure matrix}
 \usage{
-threshold(obj, toa, t0 = min(toa, na.rm = TRUE), include_censored = FALSE,
-  lags = 0L, ...)
+threshold(obj, toa, t0 = min(toa, na.rm = TRUE),
+  include_censored = FALSE, lags = 0L, ...)
 }
 \arguments{
 \item{obj}{Either a \eqn{n\times T}{n * T} matrix (eposure to the innovation obtained from
