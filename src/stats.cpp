@@ -26,7 +26,7 @@ using namespace Rcpp;
 
 //' @export
 //' @rdname vertex_covariate_dist
-// [[Rcpp::export]]
+// [[Rcpp::export(rng = false)]]
 arma::sp_mat vertex_covariate_dist(const arma::sp_mat & graph,
                                    const arma::mat & X,
                                    double p = 2.0) {
@@ -46,7 +46,7 @@ arma::sp_mat vertex_covariate_dist(const arma::sp_mat & graph,
   return ans;
 }
 
-// [[Rcpp::export]]
+// [[Rcpp::export(rng = false)]]
 arma::sp_mat vertex_mahalanobis_dist_cpp(
     const arma::sp_mat & graph,
     const arma::mat & X,
@@ -107,7 +107,7 @@ arma::sp_mat vertex_mahalanobis_dist_cpp(
 //' vertex_covariate_compare(G, x, ">=")
 //' vertex_covariate_compare(G, x, "<=")
 //' @export
-// [[Rcpp::export]]
+// [[Rcpp::export(rng = false)]]
 arma::sp_mat vertex_covariate_compare(
     const arma::sp_mat & graph,
     const NumericVector & X,
@@ -128,7 +128,7 @@ arma::sp_mat vertex_covariate_compare(
   return ans;
 }
 
-// [[Rcpp::export]]
+// [[Rcpp::export(rng = false)]]
 List moran_cpp(const arma::colvec & x, const arma::sp_mat & w) {
   double xmean = mean(x);
 
@@ -162,7 +162,7 @@ List moran_cpp(const arma::colvec & x, const arma::sp_mat & w) {
   arma::sp_colvec w_rowsums = sum(w, 1);
   arma::sp_rowvec w_colsums = sum(w, 0);
 
-  for (unsigned int i = 0; i < N; ++i)
+  for (int i = 0; i < N; ++i)
     s2 += pow(w_rowsums.at(i) + w_colsums.at(i), 2.0);
 
   // S3
@@ -187,7 +187,7 @@ List moran_cpp(const arma::colvec & x, const arma::sp_mat & w) {
 }
 
 
-// [[Rcpp::export]]
+// [[Rcpp::export(rng = false)]]
 List struct_equiv_cpp(
     const arma::sp_mat & graph, // Must be a geodesic distances graph
     double v = 1.0
@@ -249,7 +249,7 @@ List struct_equiv_cpp(
   return List::create(_["SE"]=SE, _["d"]=d, _["gdist"]=graph);
 }
 
-// [[Rcpp::export]]
+// [[Rcpp::export(rng = false)]]
 arma::sp_mat matrix_compareCpp(
     const arma::sp_mat & A,
     const arma::sp_mat & B,
@@ -257,28 +257,30 @@ arma::sp_mat matrix_compareCpp(
 ) {
 
   // Checking dimmensions
-  int n = A.n_cols;
-  int m = A.n_rows;
+  if ((A.n_cols != B.n_cols) | (A.n_rows != B.n_rows))
+    stop("A and B should be of the same size.");
 
   // Comparing
   typedef arma::sp_mat::const_iterator spiter;
 
   arma::sp_mat Bcpy(B);
 
-  std::vector< double > val(A.n_nonzero + B.n_nonzero);
-  std::vector< unsigned int > row(A.n_nonzero + B.n_nonzero),
-    col(A.n_nonzero + B.n_nonzero);
+  std::vector< double > val(0);
+  val.reserve(A.n_nonzero + B.n_nonzero);
+  std::vector< unsigned int > row(0), col(0);
+  row.reserve(A.n_nonzero + B.n_nonzero), col.reserve(A.n_nonzero + B.n_nonzero);
 
   // Iterating through matrix A
-  unsigned int i = 0u;
   for (spiter iter=A.begin(); iter!= A.end(); ++iter) {
 
-    row[i] = iter.row();
-    col[i] = iter.col();
+    row.push_back(iter.row());
+    col.push_back(iter.col());
 
     // Filling the value
     // ans.at(iter.row(), iter.col()) =
-    val[i++] = as< double >(fun(*iter, B.at(iter.row(), iter.col()) ));
+    val.push_back(
+      as< double >(fun(*iter, B.at(iter.row(), iter.col()) ))
+      );
     Bcpy.at(iter.row(), iter.col()) = 0;
 
   }
@@ -286,17 +288,13 @@ arma::sp_mat matrix_compareCpp(
   // Iterating throught matrix B
   for (spiter iter=Bcpy.begin(); iter!= Bcpy.end(); ++iter) {
 
-    row[i] = iter.row();
-    col[i] = iter.col();
+    row.push_back(iter.row());
+    col.push_back(iter.col());
 
     // Filling the value
     // ans.at(iter.row(), iter.col()) =
-    val[i++] = as< double >(fun(A.at(iter.row(), iter.col()), *iter));
+    val.push_back(as< double >(fun(A.at(iter.row(), iter.col()), *iter)));
   }
-
-  row.erase(row.begin() + i, row.end());
-  col.erase(col.begin() + i, col.end());
-  val.erase(val.begin() + i, val.end());
 
   // Batch constructor
   arma::sp_mat ans(
@@ -304,7 +302,7 @@ arma::sp_mat matrix_compareCpp(
         arma::conv_to< arma::urowvec >::from(row),
         arma::conv_to< arma::urowvec >::from(col)
       ),
-      arma::conv_to< arma::colvec >::from(val), n, m,
+      arma::conv_to< arma::colvec >::from(val), A.n_cols, A.n_rows,
       true, false
   );
 

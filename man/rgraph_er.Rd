@@ -5,9 +5,15 @@
 \alias{bernoulli}
 \title{Erdos-Renyi model}
 \usage{
-rgraph_er(n = 10, t = 1, p = 0.01,
-  undirected = getOption("diffnet.undirected"), weighted = FALSE,
-  self = getOption("diffnet.self"), as.edgelist = FALSE)
+rgraph_er(
+  n = 10,
+  t = 1,
+  p = 0.01,
+  undirected = getOption("diffnet.undirected"),
+  weighted = FALSE,
+  self = getOption("diffnet.self"),
+  as.edgelist = FALSE
+)
 }
 \arguments{
 \item{n}{Integer. Number of vertices}
@@ -50,12 +56,11 @@ sparse matrix, hence the user should be careful when choosing the size of
 the network.
 }
 \examples{
-\dontrun{
 # Setting the seed
-set.seed(123)
+set.seed(13)
 
 # Generating an directed graph
-rgraph_er(undirected=FALSE)
+rgraph_er(undirected=FALSE, p = 0.1)
 
 # Comparing P(tie)
 x <- rgraph_er(1000, p=.1)
@@ -64,16 +69,18 @@ sum(x)/length(x)
 # Several period random gram
 rgraph_er(t=5)
 }
-}
 \references{
 Barabasi, Albert-Laszlo. "Network science book" Retrieved November 1 (2015)
 \url{http://barabasi.com/book/network-science}.
 }
 \seealso{
-Other simulation functions: \code{\link{permute_graph}},
-  \code{\link{rdiffnet}}, \code{\link{rewire_graph}},
-  \code{\link{rgraph_ba}}, \code{\link{rgraph_ws}},
-  \code{\link{ring_lattice}}
+Other simulation functions: 
+\code{\link{permute_graph}()},
+\code{\link{rdiffnet}()},
+\code{\link{rewire_graph}()},
+\code{\link{rgraph_ba}()},
+\code{\link{rgraph_ws}()},
+\code{\link{ring_lattice}()}
 }
 \author{
 George G. Vega Yon

@@ -71,33 +71,10 @@ for (i in 1:10)
 # Are these equal?
 all(ans0[] == ans1[]) # Should yield TRUE
 
-# More elaborated example (speed) -------------------------------------------
-\dontrun{
-
-set.seed(123123123)
-A <- rgraph_ba(t = 5e3, m = 2)
-B <- rgraph_ba(t = 5e3, m = 2)
-
-Am <- as.matrix(A)
-Bm <- as.matrix(B)
-
-compfun <- function(a,b)
-  ifelse(a > b, a, b)
-
-microbenchmark::microbenchmark(
-  diffnet = matrix_compare(A, B, compfun),
-  R       = matrix(ifelse(Am > Bm, Am, Bm), ncol=ncol(Am)),
-  times   = 10
-)
-# Unit: milliseconds
-#    expr       min        lq      mean    median        uq      max neval
-# diffnet  352.7989  355.0193  583.5366  357.7138  364.7604 2493.914    10
-#       R 1648.9607 1744.6762 2491.2435 1947.4344 2729.1274 6260.011    10
-
-}
 }
 \seealso{
-Other dyadic-level comparison functions: \code{\link{vertex_covariate_compare}},
-  \code{\link{vertex_covariate_dist}}
+Other dyadic-level comparison functions: 
+\code{\link{vertex_covariate_compare}()},
+\code{\link{vertex_covariate_dist}()}
 }
 \concept{dyadic-level comparison functions}

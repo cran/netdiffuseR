@@ -17,12 +17,17 @@ struct_test(graph, statistic, R, rewire.args = list(), ...)
 
 \method{print}{diffnet_struct_test}(x, ...)
 
-\method{hist}{diffnet_struct_test}(x,
+\method{hist}{diffnet_struct_test}(
+  x,
   main = "Empirical Distribution of Statistic",
-  xlab = expression(Values ~ of ~ t), breaks = 20, annotated = TRUE,
+  xlab = expression(Values ~ of ~ t),
+  breaks = 20,
+  annotated = TRUE,
   b0 = expression(atop(plain("") \%up\% plain("")), t[0]),
-  b = expression(atop(plain("") \%up\% plain("")), t[]), ask = TRUE,
-  ...)
+  b = expression(atop(plain("") \%up\% plain("")), t[]),
+  ask = TRUE,
+  ...
+)
 
 struct_test_asymp(graph, Y, statistic_name = "distance", p = 2, ...)
 }
@@ -142,7 +147,12 @@ set.seed(881)
 diffnet <- rdiffnet(100, 5, seed.graph="small-world")
 
 # Testing structure-dependency of threshold
-res <- struct_test(diffnet, function(g) mean(threshold(g), na.rm=TRUE), R=100)
+res <- struct_test(
+  diffnet,
+  function(g) mean(threshold(g), na.rm=TRUE),
+  R=100
+)
+
 res
 hist(res)
 
@@ -158,12 +168,14 @@ legend("topright", bty="n",
 c(res, res)
 
 # Running in parallel fashion
-\dontrun{
-res <- struct_test(diffnet, function(g) mean(threshold(g), na.rm=TRUE), R=100,
-ncpus=4, parallel="multicore")
+res <- struct_test(
+  diffnet, function(g) mean(threshold(g), na.rm=TRUE),
+  R=100, ncpus=2, parallel="multicore"
+)
+
 res
+
 hist(res)
-}
 }
 \references{
 Vega Yon, George G. and Valente, Thomas W. (On development).
@@ -172,8 +184,9 @@ Davidson, R., & MacKinnon, J. G. (2004). Econometric Theory and Methods. New Yor
 Oxford University Press.
 }
 \seealso{
-Other Functions for inference: \code{\link{bootnet}},
-  \code{\link{moran}}
+Other Functions for inference: 
+\code{\link{bootnet}()},
+\code{\link{moran}()}
 }
 \author{
 George G. Vega Yon

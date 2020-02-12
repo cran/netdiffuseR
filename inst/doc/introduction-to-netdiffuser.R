@@ -1,8 +1,8 @@
-## ----Setup, echo=FALSE---------------------------------------------------
+## ----Setup, echo=FALSE--------------------------------------------------------
 library(knitr)
 knitr::opts_chunk$set(fig.width=9, fig.height=6, out.width="600px",fig.align = "center")
 
-## ----Simulating diffnets-------------------------------------------------
+## ----Simulating diffnets------------------------------------------------------
 library(netdiffuseR)
 s <- 11532
 set.seed(s)
@@ -24,13 +24,13 @@ diffnet_mar <- rdiffnet(200, 20, "marginal", seed.p.adopt = .1,
                         threshold.dist = function(x) 0.3)
 
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 summary(diffnet_mar)
 
-## ----Printing the networks-----------------------------------------------
+## ----Printing the networks----------------------------------------------------
 diffnet_ran; diffnet_cen; diffnet_mar
 
-## ----Seed graph and initial adopters, message=FALSE, fig.height=4--------
+## ----Seed graph and initial adopters, message=FALSE, fig.height=4-------------
 cols <- c("lightblue","green", "blue")
 
 oldpar <- par(no.readonly = TRUE)
@@ -40,10 +40,10 @@ set.seed(s);plot(diffnet_cen, main="Central seed")
 coords <- set.seed(s);plot(diffnet_mar, main="Marginal seed")
 par(oldpar)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 plot_diffnet(diffnet_ran, slices = c(1,4,8,12,16,20), layout=coords)
 
-## ----Cumulative adopt count----------------------------------------------
+## ----Cumulative adopt count---------------------------------------------------
 plot_adopters(diffnet_ran, bg = cols[1], include.legend = FALSE, what="cumadopt")
 plot_adopters(diffnet_cen, bg = cols[2], add=TRUE, what="cumadopt")
 plot_adopters(diffnet_mar, bg = cols[3], add=TRUE, what="cumadopt")
@@ -52,7 +52,7 @@ legend("topleft", bty="n",
        legend = c("Random","Central", "Marginal"),
        fill=cols)
 
-## ----Hazard rate---------------------------------------------------------
+## ----Hazard rate--------------------------------------------------------------
 plot_hazard(diffnet_ran, ylim=c(0,1), bg=cols[1])
 plot_hazard(diffnet_cen, add=TRUE, bg=cols[2])
 plot_hazard(diffnet_mar, add=TRUE, bg=cols[3])
@@ -61,7 +61,7 @@ legend("topleft", bty="n",
        legend = c("Random","Central", "Marginal"),
        fill=cols)
 
-## ----Infection and susceptibility----------------------------------------
+## ----Infection and susceptibility---------------------------------------------
 plot_infectsuscep(diffnet_ran, bins=15, K=3, 
                   main = "Distribution of Infectiousness and\nSusceptibility (Random)")
 plot_infectsuscep(diffnet_cen, bins=15, K=3, 
@@ -69,10 +69,10 @@ plot_infectsuscep(diffnet_cen, bins=15, K=3,
 plot_infectsuscep(diffnet_mar, bins=15, K=3, 
                   main = "Distribution of Infectiousness and\nSusceptibility (Marginal)")
 
-## ----Threshold-----------------------------------------------------------
+## ----Threshold----------------------------------------------------------------
 plot_threshold(diffnet_ran)
 
-## ----Multiple-simulations------------------------------------------------
+## ----Multiple-simulations-----------------------------------------------------
 # Simulating a diffusion process with all the defaults but setting 
 # -seed.nodes- to be random
 set.seed(1)

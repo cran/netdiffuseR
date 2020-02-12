@@ -359,8 +359,6 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #'    x
 #' })
 #'
-#' # Recall setting valued equal to TRUE!
-#' expo_se <- exposure(graph, alt.graph=SE , valued=TRUE)
 #'
 #' # These three lines are equivalent to:
 #' expo_se2 <- exposure(graph, alt.graph="se", valued=TRUE)
@@ -595,7 +593,7 @@ exposure <- function(
   # Checking lags
   lags <- check_lags(nslices(graph), lags)
 
-  if (is.array(graph) | is.list(graph)) {
+  if ((is.array(graph) & !inherits(graph, "matrix")) | is.list(graph)) {
     exposure.list(as_spmat(graph), cumadopt, attrs, outgoing, valued, normalized,
                   self, lags)
   } else stopifnot_graph(graph)
@@ -626,8 +624,15 @@ exposure.list <- function(
 }
 
 exposure_for <- function(
-  graph, cumadopt, attrs, outgoing, valued, normalized,
-  self, lags) {
+  graph,
+  cumadopt,
+  attrs,
+  outgoing,
+  valued,
+  normalized,
+  self,
+  lags
+  ) {
 
   out <- matrix(nrow = nrow(cumadopt), ncol = ncol(cumadopt))
 
@@ -958,10 +963,11 @@ threshold <- function(obj, toa, t0=min(toa, na.rm = TRUE), include_censored=FALS
 #' ftable(out)
 #'
 #' # Can be coerced into a data.frame, e.g. ------------------------------------
-#' \dontrun{
-#'  View(classify(brfarmersDiffNet))
-#'  cbind(as.data.frame(classify(brfarmersDiffNet)), brfarmersDiffNet$toa)
-#' }
+#'  str(classify(brfarmersDiffNet))
+#'  ans <- cbind(
+#'  as.data.frame(classify(brfarmersDiffNet)), brfarmersDiffNet$toa
+#'  )
+#'  head(ans)
 #'
 #' # Creating a mosaic plot with the medical innovations -----------------------
 #' x <- classify(medInnovationsDiffNet)
@@ -1098,7 +1104,7 @@ plot.diffnet_adopters <- function(x, y = NULL,
 #' G <- rgraph_ws(20, 4, .1)
 #' X <- matrix(runif(40), ncol=2)
 #'
-#' vertex_covariate_dist(G, X)
+#' vertex_covariate_dist(G, X)[1:5, 1:5]
 #'
 #' # Mahalanobis distance ------------------------------------------------------
 #' S <- var(X)
@@ -1212,30 +1218,22 @@ vertex_mahalanobis_dist <- function(graph, X, S) {
 #' # Are these equal?
 #' all(ans0[] == ans1[]) # Should yield TRUE
 #'
-#' # More elaborated example (speed) -------------------------------------------
-#' \dontrun{
-#'
-#' set.seed(123123123)
-#' A <- rgraph_ba(t = 5e3, m = 2)
-#' B <- rgraph_ba(t = 5e3, m = 2)
-#'
-#' Am <- as.matrix(A)
-#' Bm <- as.matrix(B)
-#'
-#' compfun <- function(a,b)
-#'   ifelse(a > b, a, b)
-#'
-#' microbenchmark::microbenchmark(
-#'   diffnet = matrix_compare(A, B, compfun),
-#'   R       = matrix(ifelse(Am > Bm, Am, Bm), ncol=ncol(Am)),
-#'   times   = 10
-#' )
-#' # Unit: milliseconds
-#' #    expr       min        lq      mean    median        uq      max neval
-#' # diffnet  352.7989  355.0193  583.5366  357.7138  364.7604 2493.914    10
-#' #       R 1648.9607 1744.6762 2491.2435 1947.4344 2729.1274 6260.011    10
-#'
-#' }
+# # More elaborated example (speed) -------------------------------------------
+#
+# set.seed(123123123)
+# A <- rgraph_ba(t = 5e3, m = 2)
+# B <- rgraph_ba(t = 5e3, m = 2)
+#
+# Am <- as.matrix(A)
+# Bm <- as.matrix(B)
+#
+# compfun <- function(a,b) {
+#   ifelse(a > b, a, b)
+# }
+#
+# t0 <- system.time(matrix_compare(A, B, compfun))
+# t1 <- system.time(matrix(ifelse(Am > Bm, Am, Bm), ncol=ncol(Am)))
+# t1/t0
 #' @aliases binary-functions
 #' @family dyadic-level comparison functions
 matrix_compare <- function(A, B, fun) {

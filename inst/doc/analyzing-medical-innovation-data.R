@@ -1,12 +1,12 @@
-## ----Setup, echo=FALSE, message=FALSE, warning=FALSE---------------------
+## ----Setup, echo=FALSE, message=FALSE, warning=FALSE--------------------------
 library(knitr)
 opts_chunk$set(out.width = 600, fig.align = "center", fig.width = 7, fig.height = 7) 
 
-## ----Loading pkgs and reading the data-----------------------------------
+## ----Loading pkgs and reading the data----------------------------------------
 library(netdiffuseR)
 data(medInnovations)
 
-## ----Preparing data for netdiffuseR--------------------------------------
+## ----Preparing data for netdiffuseR-------------------------------------------
 # Creating unique ids (including for the network data)
 othervars <- c("id", "toa", "city")
 netvars <- names(medInnovations)[grepl("^net", names(medInnovations))]
@@ -24,7 +24,7 @@ medInnovations.long <- reshape(
   varying = netvars,
   timevar = "level", idvar="id", direction="long")
 
-## ----Importing data to netdiffuseR---------------------------------------
+## ----Importing data to netdiffuseR--------------------------------------------
 # Coersing the edgelist to an adjacency matrix. Here we are assuming that the
 # network is constant through time.
 graph <- with(
@@ -32,7 +32,7 @@ graph <- with(
   edgelist_to_adjmat(cbind(id, net), t=18,undirected=FALSE, keep.isolates = TRUE)
 )
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 # Just to be sure. Sorting the data!
 orddata <- as.numeric(as.factor(rownames(graph[[1]])))
 medInnovations <- medInnovations[orddata,]
@@ -41,18 +41,18 @@ medInnovations <- medInnovations[orddata,]
 diffnet <- as_diffnet(graph, medInnovations$toa, 
                       vertex.static.attrs = subset(medInnovations, select=c(-id, -toa)))
 
-## ----Checking-the-methods------------------------------------------------
+## ----Checking-the-methods-----------------------------------------------------
 plot(diffnet, t=diffnet$meta$nper)
 diffnet
 summary(diffnet)
 
-## ----graphs--------------------------------------------------------------
+## ----graphs-------------------------------------------------------------------
 plot_diffnet(diffnet, slices=c(1,4,8,12,16,18))
 plot_threshold(diffnet, undirected = FALSE, vertex.size = 1/5)
 plot_adopters(diffnet)
 plot_hazard(diffnet)
 
-## ----Subsetting----------------------------------------------------------
+## ----Subsetting---------------------------------------------------------------
 # Get cities ids so we can subset the vertices and run the test by city.
 city <- diffnet$vertex.static.attrs[,"city"]
 
@@ -63,7 +63,7 @@ diffnet_city2 <- diffnet[which(city==2),]
 diffnet_city3 <- diffnet[which(city==3),]
 diffnet_city4 <- diffnet[which(city==4),]
 
-## ----Multithreshold------------------------------------------------------
+## ----Multithreshold-----------------------------------------------------------
 oldpar <- par(no.readonly = TRUE)
 par(mfrow=c(2,2))
 plot_threshold(diffnet_city1, vertex.label = "", main="Threshold and ToA\nin City 1")
@@ -72,10 +72,10 @@ plot_threshold(diffnet_city3, vertex.label = "", main="Threshold and ToA\nin Cit
 plot_threshold(diffnet_city4, vertex.label = "", main="Threshold and ToA\nin City 4")
 par(oldpar)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 plot_infectsuscep(diffnet_city1, K=5, logscale = TRUE, bins=30)
 
-## ----Stat-test-----------------------------------------------------------
+## ----Stat-test----------------------------------------------------------------
 # Defining the statistic
 avgthr <- function(x) mean(threshold(x), na.rm = TRUE)
 
@@ -95,7 +95,7 @@ test3
 test4
 testall
 
-## ----Histograms----------------------------------------------------------
+## ----Histograms---------------------------------------------------------------
 # To make it nicer, we change the parameters in using par
 # (see ?par)
 oldpar <- par(no.readonly = TRUE)
@@ -110,7 +110,7 @@ hist(test4, main="Distribution of Statistic on rewired\nnetwork (City 4)", ask =
 # Returning to the previous graphical parameters
 par(oldpar)
 
-## ----Computing-exposure--------------------------------------------------
+## ----Computing-exposure-------------------------------------------------------
 # Calculating lagged exposure
 expo <- exposure(diffnet, lags = 1L)
 head(expo)
@@ -119,11 +119,11 @@ head(expo)
 diffnet[["lagged_expo"]] <- expo
 diffnet[["adopted"]]  <- toa_mat(diffnet)$cumadopt
 
-## ----Creating the diffnet model------------------------------------------
+## ----Creating the diffnet model-----------------------------------------------
 # Getting the data
 mydata <- as.data.frame(diffnet)
 
-## ----Running the model---------------------------------------------------
+## ----Running the model--------------------------------------------------------
 # Running a model
 summary(
   glm(adopted ~ lagged_expo + factor(per) + factor(city) + belief + 
@@ -133,7 +133,7 @@ summary(
       family = binomial(link="logit"))
 )
 
-## ----Diffreg-------------------------------------------------------------
+## ----Diffreg------------------------------------------------------------------
 summary(
   diffreg(diffnet ~ exposure + factor(per) + factor(city) + belief + 
             proage + I(proage^2))

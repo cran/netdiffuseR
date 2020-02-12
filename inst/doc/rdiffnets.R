@@ -1,11 +1,11 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 
-## ----loading, message=FALSE, warning=FALSE-------------------------------
+## ----loading, message=FALSE, warning=FALSE------------------------------------
 library(netdiffuseR)
 library(sna)
 
-## ----random-net----------------------------------------------------------
+## ----random-net---------------------------------------------------------------
 set.seed(8826)
 
 # Simulating a small world (10, 3) with pr = .3
@@ -14,12 +14,12 @@ net <- rgraph_ws(50, 3, .3)
 # A bit more of rewiring
 net <- rewire_graph(net, p=3, both.ends = TRUE)
 
-## ----viz-----------------------------------------------------------------
+## ----viz----------------------------------------------------------------------
 
 # Visualizing with 
 gplot(as.matrix(net))
 
-## ----diffnet-------------------------------------------------------------
+## ----diffnet------------------------------------------------------------------
 # Random diffusion with a fixed threshold of 1, simulating 5 time points
 mydiffnet <- rdiffnet(
   seed.graph     = net,                    # The network we just created
@@ -37,7 +37,7 @@ plot_diffnet(mydiffnet)
 # Some summary stats
 summary(mydiffnet)
 
-## ----diffnet-multiple, warning=FALSE-------------------------------------
+## ----diffnet-multiple, warning=FALSE------------------------------------------
 set.seed(871)
 mydiffnet <- rdiffnet_multiple(
   statistic      = function(n) cumulative_adopt_count(n)["prop",],

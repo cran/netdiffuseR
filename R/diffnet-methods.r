@@ -975,18 +975,23 @@ plot_infectsuscep <- function(
 
   if (!length(t0)) t0 <- min(toa, na.rm = TRUE)
 
-  switch (class(graph),
-    array = plot_infectsuscep.array(
+  cls <- class(graph)
+
+  if ("array" %in% cls) {
+    plot_infectsuscep.array(
       graph, toa, t0, normalize, K, r, expdiscount, bins, nlevels, h, logscale, main,
-      xlab, ylab, sub, color.palette, include.grid, exclude.zeros, valued, ...),
-    list = plot_infectsuscep.list(
+      xlab, ylab, sub, color.palette, include.grid, exclude.zeros, valued, ...)
+  } else if ("list" %in% cls) {
+    plot_infectsuscep.list(
       graph, toa, t0, normalize, K, r, expdiscount, bins, nlevels, h, logscale, main,
-      xlab, ylab, sub, color.palette, include.grid, exclude.zeros, valued,...),
-    diffnet = plot_infectsuscep.list(
+      xlab, ylab, sub, color.palette, include.grid, exclude.zeros, valued,...)
+  } else if ("diffnet" %in% cls) {
+    plot_infectsuscep.list(
       graph$graph, graph$toa, t0, normalize, K, r, expdiscount, bins, nlevels, h, logscale, main,
-      xlab, ylab, sub, color.palette, include.grid, exclude.zeros, valued,...),
+      xlab, ylab, sub, color.palette, include.grid, exclude.zeros, valued,...)
+  } else
     stopifnot_graph(graph)
-  )
+
 }
 
 # @export
@@ -1525,16 +1530,22 @@ as.array.diffnet <- function(x, ...) {
 #' nedges(graph_mat)
 #' nedges(graph_dgCMatrix)
 nvertices <- function(graph) {
-  switch(class(graph),
-         array     = nrow(graph),
-         matrix    = nrow(graph),
-         dgCMatrix = nrow(graph),
-         list      = nrow(graph[[1]]),
-         diffnet   = graph$meta$n,
-         igraph    = igraph::vcount(graph),
-         network   = network::network.size(graph),
-         stopifnot_graph(graph)
-         )
+
+  cls <- class(graph)
+
+  if (any(c("array", "matrix", "dgCMatrix") %in% cls)) {
+    nrow(graph)
+  } else if ("list" %in% cls) {
+    nrow(graph[[1]])
+  } else if ("diffnet" %in% cls) {
+    graph$meta$n
+  } else if ("igraph" %in% cls) {
+    igraph::vcount(graph)
+  } else if ("network" %in% cls) {
+    network::network.size(graph)
+  } else
+    stopifnot_graph(graph)
+
 }
 
 #' @rdname nvertices
@@ -1544,32 +1555,41 @@ nnodes <- nvertices
 #' @export
 #' @rdname nvertices
 nedges <- function(graph) {
-  switch (class(graph),
-    array     = {
-      # Computing and coercing into a list
-      x <- as.list(apply(graph, 3, function(x) sum(x!=0)))
 
-      # Naming
-      tnames <- names(x)
-      if (!length(tnames)) names(x) <- 1:length(x)
-      x
-      },
-    matrix    = sum(graph != 0),
-    dgCMatrix = length(graph@i),
-    list      = {
-      # Computing
-      x <- lapply(graph, function(x) length(x@i))
+  cls <- class(graph)
 
-      # Naming
-      tnames <- names(x)
-      if (!length(tnames)) names(x) <- 1:length(x)
-      x
-      },
-    diffnet   = lapply(graph$graph, function(x) sum(x@x != 0)),
-    igraph    = igraph::ecount(graph),
-    network   = network::network.edgecount(graph),
+  if ("matrix" %in% cls) {
+    sum(graph != 0)
+  } else if ("array" %in% cls) {
+    # Computing and coercing into a list
+    x <- as.list(apply(graph, 3, function(x) sum(x!=0)))
+
+    # Naming
+    tnames <- names(x)
+    if (!length(tnames)) names(x) <- 1:length(x)
+    x
+
+  } else if ("dgCMatrix" %in% cls) {
+    length(graph@i)
+  } else if ("list" %in% cls) {
+
+    # Computing
+    x <- lapply(graph, function(x) length(x@i))
+
+    # Naming
+    tnames <- names(x)
+    if (!length(tnames)) names(x) <- 1:length(x)
+    x
+
+  } else if ("diffnet" %in% cls) {
+    lapply(graph$graph, function(x) sum(x@x != 0))
+  } else if ("igraph" %in% cls) {
+    igraph::ecount(graph)
+  } else if ("network" %in% cls) {
+    network::network.edgecount(graph)
+  } else
     stopifnot_graph(graph)
-  )
+
 }
 
 #' @export
@@ -1579,14 +1599,22 @@ nlinks <- nedges
 #' @export
 #' @rdname nvertices
 nslices <- function(graph) {
-  switch (class(graph),
-    array     = dim(graph)[3],
-    matrix    = 1L,
-    dgCMatrix = 1L,
-    diffnet   = graph$meta$nper,
-    list      = length(graph),
+
+  cls <- class(graph)
+
+  if ("matrix" %in% cls) {
+    1L
+  } else if ("array" %in% cls)  {
+    dim(graph)[3]
+  } else if ("dgCMatrix" %in% cls)  {
+    1L
+  } else if ("diffnet" %in% cls)  {
+    graph$meta$nper
+  } else if ("list" %in% cls) {
+    length(graph)
+  } else
     stopifnot_graph(graph)
-  )
+
 }
 
 #' @export
