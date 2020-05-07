@@ -1,7 +1,6 @@
 Package: netdiffuseR
 Title: Analysis of Diffusion and Contagion Processes on Networks
-Version: 1.21.0
-Date: 2020-02-10
+Version: 1.22.0
 Authors@R: c(
   person("George", "Vega Yon", email="g.vegayon@gmail.com", role=c("aut", "cre"),
     comment=c(ORCID = "0000-0002-3171-0844", what="Rewrite functions with Rcpp, plus new features")
@@ -44,7 +43,7 @@ Collate: 'RcppExports.R' 'imports.r' 'graph_data.r' 'adjmat.r' 'bass.r'
         'stats.R' 'struct_equiv.R' 'struct_test.R'
         'survey_to_diffnet.R'
 NeedsCompilation: yes
-Packaged: 2020-02-12 06:54:49 UTC; george
+Packaged: 2020-05-06 21:21:43 UTC; george
 Author: George Vega Yon [aut, cre] (<https://orcid.org/0000-0002-3171-0844>,
     Rewrite functions with Rcpp, plus new features),
   Thomas Valente [aut, cph] (<https://orcid.org/0000-0002-8824-5816>, R
@@ -53,4 +52,4 @@ Author: George Vega Yon [aut, cre] (<https://orcid.org/0000-0002-3171-0844>,
   Timothy Hayes [ctb] (Package's first version)
 Maintainer: George Vega Yon <g.vegayon@gmail.com>
 Repository: CRAN
-Date/Publication: 2020-02-12 10:40:02 UTC
+Date/Publication: 2020-05-07 13:00:06 UTC

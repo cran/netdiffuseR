@@ -330,7 +330,7 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #' @references
 #' Burt, R. S. (1987). "Social Contagion and Innovation: Cohesion versus Structural
 #' Equivalence". American Journal of Sociology, 92(6), 1287.
-#' \url{http://doi.org/10.1086/228667}
+#' \doi{10.1086/228667}
 #'
 #' Valente, T. W. (1995). "Network models of the diffusion of innovations"
 #'  (2nd ed.). Cresskill N.J.: Hampton Press.
@@ -350,7 +350,7 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #'
 #' # Calculating the exposure based on Structural Equivalence ------------------
 #' set.seed(113132)
-#' graph <- rdiffnet(100, 10)
+#' graph <- rdiffnet(100, 4)
 #'
 #' SE <- lapply(struct_equiv(graph), "[[", "SE")
 #' SE <- lapply(SE, function(x) {
@@ -377,6 +377,9 @@ dgr.array <- function(graph, cmode, undirected, self, valued) {
 #'
 #' # Structral equivalence for different communities ---------------------------
 #' data(medInnovationsDiffNet)
+#'
+#' # Only using 4 time slides, this is for convenience
+#' medInnovationsDiffNet <- medInnovationsDiffNet[, , 1:4]
 #'
 #' # METHOD 1: Using the c.diffnet method:
 #'
