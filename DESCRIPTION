@@ -1,6 +1,6 @@
 Package: netdiffuseR
 Title: Analysis of Diffusion and Contagion Processes on Networks
-Version: 1.22.0
+Version: 1.22.3
 Authors@R: c(
   person("George", "Vega Yon", email="g.vegayon@gmail.com", role=c("aut", "cre"),
     comment=c(ORCID = "0000-0002-3171-0844", what="Rewrite functions with Rcpp, plus new features")
@@ -21,16 +21,17 @@ Description: Empirical statistical analysis, visualization and simulation of
 Depends: R (>= 3.1.1)
 License: MIT + file LICENSE
 LazyData: true
+Date: 2021-05-21
 Imports: Rcpp (>= 0.12.1), sna, network, networkDynamic, Matrix, MASS,
         MatchIt, SparseM, methods, grDevices, graphics, stats, utils,
         boot, igraph, viridisLite
-Suggests: covr, testthat, knitr, ape, RSiena, survival
+Suggests: covr, testthat, knitr, rmarkdown, ape, RSiena, survival
 VignetteBuilder: knitr
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 Encoding: UTF-8
 URL: https://github.com/USCCANA/netdiffuseR,
-        https://USCCANA.github.io/netdiffuseR
+        https://USCCANA.github.io/netdiffuseR/
 BugReports: https://github.com/USCCANA/netdiffuseR/issues
 Classification/MSC: 90C35, 90B18, 91D30
 Collate: 'RcppExports.R' 'imports.r' 'graph_data.r' 'adjmat.r' 'bass.r'
@@ -43,7 +44,7 @@ Collate: 'RcppExports.R' 'imports.r' 'graph_data.r' 'adjmat.r' 'bass.r'
         'stats.R' 'struct_equiv.R' 'struct_test.R'
         'survey_to_diffnet.R'
 NeedsCompilation: yes
-Packaged: 2020-05-06 21:21:43 UTC; george
+Packaged: 2021-05-27 17:30:52 UTC; george
 Author: George Vega Yon [aut, cre] (<https://orcid.org/0000-0002-3171-0844>,
     Rewrite functions with Rcpp, plus new features),
   Thomas Valente [aut, cph] (<https://orcid.org/0000-0002-8824-5816>, R
@@ -52,4 +53,4 @@ Author: George Vega Yon [aut, cre] (<https://orcid.org/0000-0002-3171-0844>,
   Timothy Hayes [ctb] (Package's first version)
 Maintainer: George Vega Yon <g.vegayon@gmail.com>
 Repository: CRAN
-Date/Publication: 2020-05-07 13:00:06 UTC
+Date/Publication: 2021-05-28 16:30:08 UTC

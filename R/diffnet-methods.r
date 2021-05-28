@@ -651,6 +651,8 @@ plot_diffnet.default <- function(
 #' plot_threshold(graph, expos, toa, vertex.size = "indegree")
 #'
 #' @export
+#' @return Invisible. A data frame with the calculated coordinates, including:
+#' `toa`, `threshold`, and `jit` (a jittered version of `toa`).
 #' @author George G. Vega Yon
 plot_threshold <- function(graph, expo, ...) UseMethod("plot_threshold")
 
