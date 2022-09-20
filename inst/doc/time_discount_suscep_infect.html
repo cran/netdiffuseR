@@ -16,19 +16,16 @@
 
 <title>Time Discounted Infection and Susceptibility</title>
 
-<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
-// v0.0.1
-// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
-
-document.addEventListener('DOMContentLoaded', function() {
-  const codeList = document.getElementsByClassName("sourceCode");
-  for (var i = 0; i < codeList.length; i++) {
-    var linkList = codeList[i].getElementsByTagName('a');
-    for (var j = 0; j < linkList.length; j++) {
-      if (linkList[j].innerHTML === "") {
-        linkList[j].setAttribute('aria-hidden', 'true');
-      }
-    }
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
   }
 });
 </script>
@@ -41,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
   div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
   ul.task-list{list-style: none;}
     </style>
+
 
 
 
@@ -239,21 +237,38 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Time Discounted Infection and Susceptibility</h1>
+<h1 class="title toc-ignore">Time Discounted Infection and
+Susceptibility</h1>
 <h4 class="author">George G. Vega Yon</h4>
 <h4 class="date">November 11, 2015</h4>
 
 
 
-<p>In Myers (2000), susceptibility and infection is defined for a given time period and as a constant throughout the network–so only varies on <span class="math inline">\(t\)</span>. In order to include effects from previous/coming time periods, it adds up through the  of the rioting, which in our case would be strength of tie, hence a dichotomous variable, whenever the event occurred a week within <span class="math inline">\(t\)</span>, furthermore, he then introduces a discount factor in order to account for decay of the influence of the event. Finally, he obtains</p>
+<p>In Myers (2000), susceptibility and infection is defined for a given
+time period and as a constant throughout the network–so only varies on
+<span class="math inline">\(t\)</span>. In order to include effects from
+previous/coming time periods, it adds up through the of the rioting,
+which in our case would be strength of tie, hence a dichotomous
+variable, whenever the event occurred a week within <span class="math inline">\(t\)</span>, furthermore, he then introduces a
+discount factor in order to account for decay of the influence of the
+event. Finally, he obtains</p>
 <p><span class="math display">\[
-V_{(t)} = \sum_{a\in \mathbf{A}(t)} \frac{S_{(a)}m_{T(a), T\leq t-T(a)}}{t- T(a)}
+V_{(t)} = \sum_{a\in \mathbf{A}(t)} \frac{S_{(a)}m_{T(a), T\leq
+t-T(a)}}{t- T(a)}
 \]</span></p>
-<p>where <span class="math inline">\(\mathbf{A}(t)\)</span> is the set of all riots that occurred by time <span class="math inline">\(t\)</span>, <span class="math inline">\(S_{(a)}\)</span> is the severity of the riot <span class="math inline">\(a\)</span>, <span class="math inline">\(T(a)\)</span> is the time period by when the riot <span class="math inline">\(a\)</span> accurred and <span class="math inline">\(m\)</span> is an indicator function.</p>
-<p>In order to include this notion in our equations, I modify these by also adding whether a link existed between <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> at the corresponding time period. Furthermore, in a more general way, the time windown is now a function of the number of time periods to include, <span class="math inline">\(K\)</span>, this way, instead of looking at time periods <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span> for infection, we look at the time range between <span class="math inline">\(t\)</span> and <span class="math inline">\(t + K\)</span>.</p>
+<p>where <span class="math inline">\(\mathbf{A}(t)\)</span> is the set
+of all riots that occurred by time <span class="math inline">\(t\)</span>, <span class="math inline">\(S_{(a)}\)</span> is the severity of the riot <span class="math inline">\(a\)</span>, <span class="math inline">\(T(a)\)</span> is the time period by when the riot
+<span class="math inline">\(a\)</span> accurred and <span class="math inline">\(m\)</span> is an indicator function.</p>
+<p>In order to include this notion in our equations, I modify these by
+also adding whether a link existed between <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> at the corresponding time period.
+Furthermore, in a more general way, the time windown is now a function
+of the number of time periods to include, <span class="math inline">\(K\)</span>, this way, instead of looking at time
+periods <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span> for infection, we look at the time
+range between <span class="math inline">\(t\)</span> and <span class="math inline">\(t + K\)</span>.</p>
 <div id="infectiousness" class="section level1">
 <h1>Infectiousness</h1>
-<p>Following the paper’s notation, a more generalized formula for infectiousness is</p>
+<p>Following the paper’s notation, a more generalized formula for
+infectiousness is</p>
 <p><span class="math display">\[\label{eq:infect-dec}
 \left(
 \sum_{k=1}^K\sum_{j\neq i} \frac{x_{ji(t+k-1)}z_{j(t+k)}}{k}
@@ -261,15 +276,19 @@ V_{(t)} = \sum_{a\in \mathbf{A}(t)} \frac{S_{(a)}m_{T(a), T\leq t-T(a)}}{t- T(a)
 \sum_{k=1}^K\sum_{j\neq i} \frac{x_{ji(t+k-1)}z_{j([t+k;T])}}{k}
 \right)^{-1}
 \]</span></p>
-<p>Where <span class="math inline">\(\frac{1}{k}\)</span> would be the equivalent of <span class="math inline">\(\frac{1}{t - T(a)}\)</span> in mayers. Alternatively, we can include a discount factor as follows</p>
+<p>Where <span class="math inline">\(\frac{1}{k}\)</span> would be the
+equivalent of <span class="math inline">\(\frac{1}{t - T(a)}\)</span> in
+mayers. Alternatively, we can include a discount factor as follows</p>
 <p><span class="math display">\[\label{eq:infect-exp}
 \left(
 \sum_{k=1}^K\sum_{j\neq i} \frac{x_{ji(t+k-1)}z_{j(t+k)}}{(1+r)^{k-1}}
 \right)\left(
-\sum_{k=1}^K\sum_{j\neq i} \frac{x_{ji(t+k-1)}z_{j([t+k;T])}}{(1+r)^{k-1}}
+\sum_{k=1}^K\sum_{j\neq i}
+\frac{x_{ji(t+k-1)}z_{j([t+k;T])}}{(1+r)^{k-1}}
 \right)^{-1}
 \]</span></p>
-<p>Observe that when <span class="math inline">\(K=1\)</span>, this formula turns out to be the same as the paper.</p>
+<p>Observe that when <span class="math inline">\(K=1\)</span>, this
+formula turns out to be the same as the paper.</p>
 </div>
 <div id="susceptibility" class="section level1">
 <h1>Susceptibility</h1>
@@ -286,10 +305,14 @@ V_{(t)} = \sum_{a\in \mathbf{A}(t)} \frac{S_{(a)}m_{T(a), T\leq t-T(a)}}{t- T(a)
 \left(
 \sum_{k=1}^K\sum_{j\neq i} \frac{x_{ij(t-k+1)}z_{j(t-k)}}{(1+r)^{k-1}}
 \right)\left(
-\sum_{k=1}^K\sum_{j\neq i} \frac{x_{ij(t-k+1)}z_{j([1;t-k])}}{(1+r)^{k-1}}
+\sum_{k=1}^K\sum_{j\neq i}
+\frac{x_{ij(t-k+1)}z_{j([1;t-k])}}{(1+r)^{k-1}}
 \right)^{-1}
 \]</span></p>
-<p>Also equal to the original equation when <span class="math inline">\(K=1\)</span>. Furthermore, the resulting statistic will lie between 0 and 1, been the later whenever <span class="math inline">\(i\)</span> acquired the innovation lastly and right after <span class="math inline">\(j\)</span> acquired it, been <span class="math inline">\(j\)</span> its only alter.</p>
+<p>Also equal to the original equation when <span class="math inline">\(K=1\)</span>. Furthermore, the resulting statistic
+will lie between 0 and 1, been the later whenever <span class="math inline">\(i\)</span> acquired the innovation lastly and
+right after <span class="math inline">\(j\)</span> acquired it, been
+<span class="math inline">\(j\)</span> its only alter.</p>
 <p>(PENDING: Normalization of the stats)</p>
 </div>
 
